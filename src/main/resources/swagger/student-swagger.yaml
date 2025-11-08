@@ -1,0 +1,500 @@
+openapi: 3.0.3
+info:
+  title: Student Service API
+  description: API for managing students and their progress
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /students:
+    post:
+      tags:
+        - Students
+      summary: Create a new student
+      description: Create a new student record
+      operationId: createStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentDTO'
+      responses:
+        '200':
+          description: Student created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Bad request
+        '409':
+          description: Student already exists
+        '500':
+          description: Internal server error
+
+    get:
+      tags:
+        - Students
+      summary: Get students with filters
+      description: Retrieve students based on search filters
+      operationId: getAllByFilters
+      parameters:
+        - $ref: '#/components/parameters/QPFirstName'
+        - $ref: '#/components/parameters/QPLastName'
+        - $ref: '#/components/parameters/QPEmail'
+        - $ref: '#/components/parameters/QPCity'
+        - $ref: '#/components/parameters/QPGraduationYear'
+        - $ref: '#/components/parameters/QPGender'
+        - $ref: '#/components/parameters/QPMinAge'
+        - $ref: '#/components/parameters/QPMaxAge'
+        - $ref: '#/components/parameters/QPPageNum'
+        - $ref: '#/components/parameters/QPPageSize'
+        - $ref: '#/components/parameters/QPNoPagination'
+        - $ref: '#/components/parameters/QPSortBy'
+        - $ref: '#/components/parameters/QPSortDir'
+      responses:
+        '200':
+          description: Students retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+
+  /students/{ssn}:
+    get:
+      tags:
+        - Students
+      summary: Get student by SSN
+      description: Retrieve a specific student by their SSN
+      operationId: getStudentBySsn
+      parameters:
+        - $ref: '#/components/parameters/PPSsn'
+      responses:
+        '200':
+          description: Student retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+
+    put:
+      tags:
+        - Students
+      summary: Update student
+      description: Update an existing student record
+      operationId: updateStudent
+      parameters:
+        - $ref: '#/components/parameters/PPSsn'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentDTO'
+      responses:
+        '200':
+          description: Student updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+
+    delete:
+      tags:
+        - Students
+      summary: Delete student
+      description: Delete a student record by SSN
+      operationId: deleteStudent
+      parameters:
+        - $ref: '#/components/parameters/PPSsn'
+      responses:
+        '200':
+          description: Student deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+
+  /students/{ssn}/exists:
+    get:
+      tags:
+        - Students
+      summary: Check if student exists
+      description: Check if a student exists by SSN
+      operationId: existsBySsn
+      parameters:
+        - $ref: '#/components/parameters/PPSsn'
+      responses:
+        '200':
+          description: Existence check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+
+  /students/{ssn}/progress:
+    get:
+      tags:
+        - Students
+      summary: Get student progress
+      description: Retrieve progress information for a specific student
+      operationId: getStudentProgress
+      parameters:
+        - $ref: '#/components/parameters/PPSsn'
+      responses:
+        '200':
+          description: Student progress retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+
+  /students/progress:
+    get:
+      tags:
+        - Students
+      summary: Get all students progress with filters
+      description: Retrieve progress information for all students based on filters
+      operationId: getAllStudentsProgressByFilter
+      parameters:
+        - $ref: '#/components/parameters/QPFirstName'
+        - $ref: '#/components/parameters/QPLastName'
+        - $ref: '#/components/parameters/QPEmail'
+        - $ref: '#/components/parameters/QPCity'
+        - $ref: '#/components/parameters/QPGraduationYear'
+        - $ref: '#/components/parameters/QPGender'
+        - $ref: '#/components/parameters/QPMinAge'
+        - $ref: '#/components/parameters/QPMaxAge'
+        - $ref: '#/components/parameters/QPPageNum'
+        - $ref: '#/components/parameters/QPPageSize'
+        - $ref: '#/components/parameters/QPNoPagination'
+      responses:
+        '200':
+          description: Students progress retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+
+  /students/{ssn}/exam-history:
+    get:
+      tags:
+        - Students
+      summary: Get student exam history
+      description: Retrieve exam attempt history for a specific student
+      operationId: getStudentExamHistory
+      parameters:
+        - $ref: '#/components/parameters/PPSsn'
+      responses:
+        '200':
+          description: Exam history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+
+  /students/count:
+    get:
+      tags:
+        - Students
+      summary: Count students with filters
+      description: Count students based on search filters
+      operationId: countStudents
+      parameters:
+        - $ref: '#/components/parameters/QPFirstName'
+        - $ref: '#/components/parameters/QPLastName'
+        - $ref: '#/components/parameters/QPEmail'
+        - $ref: '#/components/parameters/QPCity'
+        - $ref: '#/components/parameters/QPGraduationYear'
+        - $ref: '#/components/parameters/QPGender'
+        - $ref: '#/components/parameters/QPMinAge'
+        - $ref: '#/components/parameters/QPMaxAge'
+      responses:
+        '200':
+          description: Student count retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+
+    StudentDTO:
+      type: object
+      required:
+        - ssn
+        - firstName
+        - lastName
+        - gender
+        - birthdate
+        - email
+        - phone
+        - graduationYear
+      properties:
+        ssn:
+          type: string
+          pattern: '^\d{14}$'
+          description: Student's national ID (14 digits)
+          example: "12345678901234"
+        firstName:
+          type: string
+          maxLength: 50
+          description: Student's first name
+          example: "John"
+        lastName:
+          type: string
+          maxLength: 50
+          description: Student's last name
+          example: "Doe"
+        gender:
+          type: string
+          maxLength: 10
+          description: Student's gender
+          example: "Male"
+        birthdate:
+          type: string
+          format: date
+          description: Student's birth date
+          example: "2000-01-15"
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          description: Student's email address
+          example: "john.doe@example.com"
+        phone:
+          type: string
+          pattern: '^\d{11}$'
+          description: Student's phone number (11 digits)
+          example: "01234567890"
+        graduationYear:
+          type: integer
+          format: int32
+          minimum: 2000
+          maximum: 2030
+          description: Expected graduation year
+          example: 2025
+        city:
+          type: string
+          maxLength: 50
+          description: Student's city
+          example: "Cairo"
+
+    StudentProgressView:
+      type: object
+      properties:
+        ssn:
+          type: string
+        studentName:
+          type: string
+        trackName:
+          type: string
+        totalExamsTaken:
+          type: integer
+          format: int32
+        passedExams:
+          type: integer
+          format: int32
+        overallAverage:
+          type: number
+          format: double
+        recentGrade:
+          type: number
+          format: double
+        status:
+          type: string
+
+    StudentExamHistoryView:
+      type: object
+      properties:
+        studentSsn:
+          type: string
+        studentName:
+          type: string
+        examId:
+          type: integer
+          format: int32
+        examTitle:
+          type: string
+        courseName:
+          type: string
+        attemptDate:
+          type: string
+          format: date-time
+        grade:
+          type: number
+          format: double
+        attemptCount:
+          type: integer
+          format: int32
+        status:
+          type: string
+        duration:
+          type: integer
+          format: int32
+        totalQuestions:
+          type: integer
+          format: int32
+        correctAnswers:
+          type: integer
+          format: int32
+
+  parameters:
+    PPSsn:
+      name: ssn
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^\d{14}$'
+
+    QPFirstName:
+      name: firstName
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPLastName:
+      name: lastName
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPEmail:
+      name: email
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPCity:
+      name: city
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPGraduationYear:
+      name: graduationYear
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPGender:
+      name: gender
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPMinAge:
+      name: minAge
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPMaxAge:
+      name: maxAge
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPPageNum:
+      name: pageNum
+      in: query
+      description: Pagination Page Number
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    QPPageSize:
+      name: pageSize
+      in: query
+      description: Pagination Page Size
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 25
+        minimum: 10
+        maximum: 100
+
+    QPNoPagination:
+      name: noPagination
+      in: query
+      required: false
+      description: >
+        If true, returns all results without pagination.
+        Useful for dropdowns or exports.
+      schema:
+        type: boolean
+        default: false
+
+    QPSortBy:
+      name: sortBy
+      in: query
+      description: Sort by field
+      required: false
+      schema:
+        type: string
+
+    QPSortDir:
+      name: sortDir
+      in: query
+      description: Sort direction
+      required: false
+      schema:
+        type: string
+        enum: [ASC, DESC]

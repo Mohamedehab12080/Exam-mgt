@@ -1,0 +1,377 @@
+openapi: 3.0.3
+info:
+  title: Course Service API
+  description: API for managing courses
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /courses:
+    post:
+      tags:
+        - Courses
+      summary: Create a new course
+      description: Create a new course
+      operationId: createCourse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseDTO'
+      responses:
+        '201':
+          description: Course created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+    get:
+      tags:
+        - Courses
+      summary: Get courses with filters
+      description: Retrieve courses based on search filters
+      operationId: getCourses
+      parameters:
+        - $ref: '#/components/parameters/QPCourseName'
+        - $ref: '#/components/parameters/QPDuration'
+        - $ref: '#/components/parameters/QPMinDuration'
+        - $ref: '#/components/parameters/QPMaxDuration'
+        - $ref: '#/components/parameters/QPHasExams'
+        - $ref: '#/components/parameters/QPHasQuestions'
+        - $ref: '#/components/parameters/QPPageNum'
+        - $ref: '#/components/parameters/QPPageSize'
+        - $ref: '#/components/parameters/QPSort'
+      responses:
+        '200':
+          description: Courses retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+  /courses/count:
+    get:
+      tags:
+        - Courses
+      summary: Count courses with filters
+      description: Count courses based on search filters
+      operationId: countCourses
+      parameters:
+        - $ref: '#/components/parameters/QPCourseName'
+        - $ref: '#/components/parameters/QPHasExams'
+      responses:
+        '200':
+          description: Course count retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+  /courses/{courseId}:
+    get:
+      tags:
+        - Courses
+      summary: Get course by ID
+      description: Retrieve a specific course by its ID
+      operationId: getCourseById
+      parameters:
+        - $ref: '#/components/parameters/PPCourseId'
+      responses:
+        '200':
+          description: Course retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '404':
+          description: Course not found
+        '500':
+          description: Internal server error
+    put:
+      tags:
+        - Courses
+      summary: Update a course
+      description: Update an existing course
+      operationId: updateCourse
+      parameters:
+        - $ref: '#/components/parameters/PPCourseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseDTO'
+      responses:
+        '200':
+          description: Course updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '400':
+          description: Invalid input
+        '404':
+          description: Course not found
+        '500':
+          description: Internal server error
+    delete:
+      tags:
+        - Courses
+      summary: Delete a course
+      description: Delete a course by ID
+      operationId: deleteCourse
+      parameters:
+        - $ref: '#/components/parameters/PPCourseId'
+      responses:
+        '200':
+          description: Course deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '404':
+          description: Course not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    CourseDTO:
+      type: object
+      required:
+        - courseName
+        - duration
+      properties:
+        courseName:
+          type: string
+          maxLength: 100
+        duration:
+          type: integer
+          format: int32
+          minimum: 1
+
+    CourseResponse:
+      type: object
+      properties:
+        courseId:
+          type: integer
+          format: int32
+        courseName:
+          type: string
+        duration:
+          type: integer
+          format: int32
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionSummary'
+
+    QuestionSummary:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int32
+        type:
+          type: string
+        questionText:
+          type: string
+
+    CourseView:
+      type: object
+      properties:
+        courseId:
+          type: integer
+          format: int32
+        courseName:
+          type: string
+        duration:
+          type: integer
+          format: int32
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionView'
+        exams:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExamView'
+        statistics:
+          $ref: '#/components/schemas/CourseStatisticsView'
+
+    QuestionView:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int32
+        type:
+          type: string
+        questionText:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceView'
+
+    ExamView:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int32
+        title:
+          type: string
+        examDate:
+          type: string
+          format: date
+        duration:
+          type: integer
+          format: int32
+        courseName:
+          type: string
+
+    ChoiceView:
+      type: object
+      properties:
+        choiceId:
+          type: integer
+          format: int32
+        choiceText:
+          type: string
+        isCorrect:
+          type: boolean
+
+    CourseStatisticsView:
+      type: object
+      properties:
+        totalExams:
+          type: integer
+          format: int32
+        totalQuestions:
+          type: integer
+          format: int32
+        mcqCount:
+          type: integer
+          format: int32
+        tfCount:
+          type: integer
+          format: int32
+        averageGrade:
+          type: number
+          format: double
+        totalAttempts:
+          type: integer
+          format: int32
+        totalStudents:
+          type: integer
+          format: int32
+
+    GeneratedApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+  parameters:
+    PPCourseId:
+      name: courseId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int32
+
+    QPCourseName:
+      name: courseName
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPDuration:
+      name: duration
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPMinDuration:
+      name: minDuration
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPMaxDuration:
+      name: maxDuration
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPHasExams:
+      name: hasExams
+      in: query
+      required: false
+      schema:
+        type: boolean
+
+    QPHasQuestions:
+      name: hasQuestions
+      in: query
+      required: false
+      schema:
+        type: boolean
+
+    QPPageNum:
+      name: page
+      in: query
+      description: Pagination Page Number
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    QPPageSize:
+      name: size
+      in: query
+      description: Pagination Page Size
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 20
+        minimum: 1
+        maximum: 100
+
+    QPSort:
+      name: sort
+      in: query
+      description: Sort criteria
+      required: false
+      schema:
+        type: string

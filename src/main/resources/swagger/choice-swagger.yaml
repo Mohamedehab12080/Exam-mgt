@@ -1,0 +1,231 @@
+openapi: 3.0.3
+info:
+  title: Choice Service API
+  description: API for managing question choices
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /choices:
+    post:
+      tags:
+        - Choices
+      summary: Create a new choice
+      description: Create a new choice for a question
+      operationId: createChoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChoiceDTO'
+      responses:
+        '201':
+          description: Choice created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+    get:
+      tags:
+        - Choices
+      summary: Get choices with filters
+      description: Retrieve choices based on search filters
+      operationId: getChoices
+      parameters:
+        - $ref: '#/components/parameters/QPQuestionId'
+        - $ref: '#/components/parameters/QPChoiceText'
+        - $ref: '#/components/parameters/QPIsCorrect'
+        - $ref: '#/components/parameters/QPPageNum'
+        - $ref: '#/components/parameters/QPPageSize'
+        - $ref: '#/components/parameters/QPSort'
+      responses:
+        '200':
+          description: Choices retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+  /choices/count:
+    get:
+      tags:
+        - Choices
+      summary: Count choices with filters
+      description: Count choices based on search filters
+      operationId: countChoices
+      parameters:
+        - $ref: '#/components/parameters/QPQuestionId'
+        - $ref: '#/components/parameters/QPIsCorrect'
+      responses:
+        '200':
+          description: Choice count retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+  /choices/{choiceId}:
+    put:
+      tags:
+        - Choices
+      summary: Update a choice
+      description: Update an existing choice
+      operationId: updateChoice
+      parameters:
+        - $ref: '#/components/parameters/PPChoiceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChoiceDTO'
+      responses:
+        '200':
+          description: Choice updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '400':
+          description: Invalid input
+        '404':
+          description: Choice not found
+        '500':
+          description: Internal server error
+    delete:
+      tags:
+        - Choices
+      summary: Delete a choice
+      description: Delete a choice by ID
+      operationId: deleteChoice
+      parameters:
+        - $ref: '#/components/parameters/PPChoiceId'
+      responses:
+        '200':
+          description: Choice deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '404':
+          description: Choice not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    ChoiceDTO:
+      type: object
+      required:
+        - questionId
+        - choiceText
+        - isCorrect
+      properties:
+        questionId:
+          type: integer
+          format: int32
+        choiceText:
+          type: string
+          maxLength: 300
+        isCorrect:
+          type: boolean
+
+    ChoiceResponse:
+      type: object
+      properties:
+        choiceId:
+          type: integer
+          format: int32
+        questionId:
+          type: integer
+          format: int32
+        choiceText:
+          type: string
+        isCorrect:
+          type: boolean
+
+    GeneratedApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+  parameters:
+    PPChoiceId:
+      name: choiceId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int32
+
+    QPQuestionId:
+      name: questionId
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPChoiceText:
+      name: choiceText
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPIsCorrect:
+      name: isCorrect
+      in: query
+      required: false
+      schema:
+        type: boolean
+
+    QPPageNum:
+      name: page
+      in: query
+      description: Pagination Page Number
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    QPPageSize:
+      name: size
+      in: query
+      description: Pagination Page Size
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 20
+        minimum: 1
+        maximum: 100
+
+    QPSort:
+      name: sort
+      in: query
+      description: Sort criteria
+      required: false
+      schema:
+        type: string

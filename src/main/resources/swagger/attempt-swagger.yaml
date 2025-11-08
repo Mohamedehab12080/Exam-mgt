@@ -1,0 +1,174 @@
+openapi: 3.0.3
+info:
+  title: Attempt Service API
+  description: API for managing exam attempts
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /attempts/{attemptId}:
+    get:
+      tags:
+        - Attempts
+      summary: Get attempt by ID
+      description: Retrieve a specific attempt by its ID
+      operationId: getAttemptById
+      parameters:
+        - $ref: '#/components/parameters/PPAttemptId'
+      responses:
+        '200':
+          description: Attempt retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '404':
+          description: Attempt not found
+        '500':
+          description: Internal server error
+
+  /attempts:
+    get:
+      tags:
+        - Attempts
+      summary: Get attempts with filters
+      description: Retrieve attempts based on search filters
+      operationId: getAttempts
+      parameters:
+        - $ref: '#/components/parameters/QPStudentSsn'
+        - $ref: '#/components/parameters/QPExamId'
+        - $ref: '#/components/parameters/QPAttemptDate'
+        - $ref: '#/components/parameters/QPPageNum'
+        - $ref: '#/components/parameters/QPPageSize'
+        - $ref: '#/components/parameters/QPSort'
+      responses:
+        '200':
+          description: Attempts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+  /attempts/count:
+    get:
+      tags:
+        - Attempts
+      summary: Count attempts with filters
+      description: Count attempts based on search filters
+      operationId: countAttempts
+      parameters:
+        - $ref: '#/components/parameters/QPStudentSsn'
+        - $ref: '#/components/parameters/QPExamId'
+      responses:
+        '200':
+          description: Attempt count retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    AttemptResponse:
+      type: object
+      properties:
+        attemptId:
+          type: integer
+          format: int32
+        studentSsn:
+          type: string
+        studentName:
+          type: string
+        examId:
+          type: integer
+          format: int32
+        examTitle:
+          type: string
+        attemptDate:
+          type: string
+          format: date
+        grade:
+          type: number
+          format: double
+
+    GeneratedApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+  parameters:
+    PPAttemptId:
+      name: attemptId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int32
+
+    QPStudentSsn:
+      name: studentSsn
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPExamId:
+      name: examId
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPAttemptDate:
+      name: attemptDate
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+
+    QPPageNum:
+      name: page
+      in: query
+      description: Pagination Page Number
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    QPPageSize:
+      name: size
+      in: query
+      description: Pagination Page Size
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 20
+        minimum: 1
+        maximum: 100
+
+    QPSort:
+      name: sort
+      in: query
+      description: Sort criteria
+      required: false
+      schema:
+        type: string

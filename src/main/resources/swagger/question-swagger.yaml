@@ -1,0 +1,262 @@
+openapi: 3.0.3
+info:
+  title: Question Service API
+  description: API for managing questions
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /questions:
+    post:
+      tags:
+        - Questions
+      summary: Create a new question
+      description: Create a new question for a course
+      operationId: createQuestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionDTO'
+      responses:
+        '201':
+          description: Question created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+    get:
+      tags:
+        - Questions
+      summary: Get questions with filters
+      description: Retrieve questions based on search filters
+      operationId: getQuestions
+      parameters:
+        - $ref: '#/components/parameters/QPCourseId'
+        - $ref: '#/components/parameters/QPType'
+        - $ref: '#/components/parameters/QPQuestionText'
+        - $ref: '#/components/parameters/QPHasChoices'
+        - $ref: '#/components/parameters/QPMinChoiceCount'
+        - $ref: '#/components/parameters/QPPageNum'
+        - $ref: '#/components/parameters/QPPageSize'
+        - $ref: '#/components/parameters/QPSort'
+      responses:
+        '200':
+          description: Questions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+  /questions/count:
+    get:
+      tags:
+        - Questions
+      summary: Count questions with filters
+      description: Count questions based on search filters
+      operationId: countQuestions
+      parameters:
+        - $ref: '#/components/parameters/QPCourseId'
+        - $ref: '#/components/parameters/QPType'
+      responses:
+        '200':
+          description: Question count retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+  /questions/{questionId}:
+    get:
+      tags:
+        - Questions
+      summary: Get question by ID
+      description: Retrieve a specific question by its ID
+      operationId: getQuestionById
+      parameters:
+        - $ref: '#/components/parameters/PPQuestionId'
+      responses:
+        '200':
+          description: Question retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '404':
+          description: Question not found
+        '500':
+          description: Internal server error
+    delete:
+      tags:
+        - Questions
+      summary: Delete a question
+      description: Delete a question by ID
+      operationId: deleteQuestion
+      parameters:
+        - $ref: '#/components/parameters/PPQuestionId'
+      responses:
+        '200':
+          description: Question deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '404':
+          description: Question not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    QuestionDTO:
+      type: object
+      required:
+        - courseId
+        - type
+        - questionText
+      properties:
+        courseId:
+          type: integer
+          format: int32
+        type:
+          type: string
+          enum: [MCQ, T/F]
+        questionText:
+          type: string
+          maxLength: 500
+
+    QuestionResponse:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int32
+        courseId:
+          type: integer
+          format: int32
+        courseName:
+          type: string
+        type:
+          type: string
+        questionText:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceResponse'
+
+    ChoiceResponse:
+      type: object
+      properties:
+        choiceId:
+          type: integer
+          format: int32
+        questionId:
+          type: integer
+          format: int32
+        choiceText:
+          type: string
+        isCorrect:
+          type: boolean
+
+    GeneratedApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+  parameters:
+    PPQuestionId:
+      name: questionId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int32
+
+    QPCourseId:
+      name: courseId
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPType:
+      name: type
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [MCQ, T/F]
+
+    QPQuestionText:
+      name: questionText
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPHasChoices:
+      name: hasChoices
+      in: query
+      required: false
+      schema:
+        type: boolean
+
+    QPMinChoiceCount:
+      name: minChoiceCount
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPPageNum:
+      name: page
+      in: query
+      description: Pagination Page Number
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    QPPageSize:
+      name: size
+      in: query
+      description: Pagination Page Size
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 20
+        minimum: 1
+        maximum: 100
+
+    QPSort:
+      name: sort
+      in: query
+      description: Sort criteria
+      required: false
+      schema:
+        type: string

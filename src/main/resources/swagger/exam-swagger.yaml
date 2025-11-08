@@ -1,0 +1,346 @@
+openapi: 3.0.3
+info:
+  title: Exam Service API
+  description: API for managing exams and submissions
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /exams:
+    post:
+      tags:
+        - Exams
+      summary: Create a new exam
+      description: Create a new exam with random questions
+      operationId: createExam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamDTO'
+      responses:
+        '201':
+          description: Exam created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '400':
+          description: Invalid input
+        '404':
+          description: Course not found
+        '500':
+          description: Internal server error
+    get:
+      tags:
+        - Exams
+      summary: Get exams with filters
+      description: Retrieve exams based on search filters
+      operationId: getExams
+      parameters:
+        - $ref: '#/components/parameters/QPTitle'
+        - $ref: '#/components/parameters/QPCourseId'
+        - $ref: '#/components/parameters/QPExamDate'
+        - $ref: '#/components/parameters/QPStartDate'
+        - $ref: '#/components/parameters/QPEndDate'
+        - $ref: '#/components/parameters/QPDuration'
+        - $ref: '#/components/parameters/QPMinDuration'
+        - $ref: '#/components/parameters/QPMaxDuration'
+        - $ref: '#/components/parameters/QPPageNum'
+        - $ref: '#/components/parameters/QPPageSize'
+        - $ref: '#/components/parameters/QPSort'
+      responses:
+        '200':
+          description: Exams retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+  /exams/count:
+    get:
+      tags:
+        - Exams
+      summary: Count exams with filters
+      description: Count exams based on search filters
+      operationId: countExams
+      parameters:
+        - $ref: '#/components/parameters/QPCourseId'
+        - $ref: '#/components/parameters/QPStartDate'
+      responses:
+        '200':
+          description: Exam count retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '500':
+          description: Internal server error
+
+  /exams/submit:
+    post:
+      tags:
+        - Exams
+      summary: Submit an exam
+      description: Submit an exam attempt with answers
+      operationId: submitExam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamSubmissionDTO'
+      responses:
+        '200':
+          description: Exam submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedApiResponse'
+        '400':
+          description: Invalid input
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    ExamDTO:
+      type: object
+      required:
+        - courseId
+        - duration
+        - title
+        - numMcq
+        - numTf
+      properties:
+        courseId:
+          type: integer
+          format: int32
+        duration:
+          type: integer
+          format: int32
+          minimum: 11
+        title:
+          type: string
+        numMcq:
+          type: integer
+          format: int32
+          minimum: 1
+        numTf:
+          type: integer
+          format: int32
+          minimum: 1
+
+    ExamSubmissionDTO:
+      type: object
+      required:
+        - ssn
+        - examId
+        - answers
+      properties:
+        ssn:
+          type: string
+          pattern: '^\d{14}$'
+        examId:
+          type: integer
+          format: int32
+        answers:
+          type: array
+          items:
+            type: string
+
+    ExamResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        courseName:
+          type: string
+        title:
+          type: string
+        duration:
+          type: integer
+          format: int32
+        numMcq:
+          type: integer
+          format: int32
+        numTf:
+          type: integer
+          format: int32
+
+    ExamResultResponse:
+      type: object
+      properties:
+        attemptId:
+          type: integer
+          format: int32
+        examId:
+          type: integer
+          format: int32
+        grade:
+          type: number
+          format: double
+        resultMessage:
+          type: string
+
+    ExamView:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int32
+        title:
+          type: string
+        examDate:
+          type: string
+          format: date
+        duration:
+          type: integer
+          format: int32
+        courseName:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionView'
+
+    QuestionView:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int32
+        type:
+          type: string
+        questionText:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceView'
+
+    ChoiceView:
+      type: object
+      properties:
+        choiceId:
+          type: integer
+          format: int32
+        choiceText:
+          type: string
+        isCorrect:
+          type: boolean
+
+    GeneratedApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+  parameters:
+    QPTitle:
+      name: title
+      in: query
+      required: false
+      schema:
+        type: string
+
+    QPCourseId:
+      name: courseId
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPExamDate:
+      name: examDate
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+
+    QPStartDate:
+      name: startDate
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+
+    QPEndDate:
+      name: endDate
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+
+    QPDuration:
+      name: duration
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPMinDuration:
+      name: minDuration
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPMaxDuration:
+      name: maxDuration
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+    QPPageNum:
+      name: page
+      in: query
+      description: Pagination Page Number
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    QPPageSize:
+      name: size
+      in: query
+      description: Pagination Page Size
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 20
+        minimum: 1
+        maximum: 100
+
+    QPSort:
+      name: sort
+      in: query
+      description: Sort criteria
+      required: false
+      schema:
+        type: string
