@@ -4,6 +4,8 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -35,6 +37,9 @@ public class ExamResponse implements Serializable {
   private String title;
 
   private Integer duration;
+
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+  private LocalDate examDate;
 
   private Integer numMcq;
 

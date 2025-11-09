@@ -1,10 +1,10 @@
 // Components Index - Export all components for easy importing
 
 // Core Components
-export { DataTableComponent } from './data-table.js';
-export { ModalComponent } from './modal.js';
-export { FormComponent } from './form.js';
-export { ChartsComponent, ChartUtils } from './charts.js';
+export { DataTableComponent } from '/data-table.js';
+export { ModalComponent } from '/modal.js';
+export { FormComponent } from '/form.js';
+export { ChartsComponent, ChartUtils } from '/charts.js';
 
 // Component Registry for global access
 window.Components = {

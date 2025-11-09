@@ -1,6 +1,76 @@
 // Helper Utility Functions
 
 /**
+ * Safe array access with validation
+ * @param {Array} array - Array to access
+ * @param {number} index - Index to access
+ * @param {*} defaultValue - Default value if invalid
+ * @returns {*} Array element or default value
+ */
+export function safeArrayAccess(array, index, defaultValue = null) {
+  if (!Array.isArray(array) || index < 0 || index >= array.length) {
+    return defaultValue;
+  }
+  return array[index];
+}
+
+/**
+ * Check if value is array and not empty
+ * @param {*} value - Value to check
+ * @returns {boolean} Whether value is non-empty array
+ */
+export function isNonEmptyArray(value) {
+  return Array.isArray(value) && value.length > 0;
+}
+
+/**
+ * Transform API response to consistent format
+ * @param {Object} response - API response
+ * @returns {Object} Normalized response
+ */
+export function normalizeApiResponse(response) {
+  if (!response) return { success: false, data: null, message: 'No response' };
+
+  // Handle your GeneratedApiResponse structure
+  if (response.success !== undefined) {
+    return {
+      success: response.success,
+      data: response.data || null,
+      message: response.message || '',
+      timestamp: response.timestamp || new Date().toISOString(),
+      status: response.status
+    };
+  }
+
+  // Handle raw data
+  return {
+    success: true,
+    data: response,
+    message: 'Success',
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Extract pagination info from API response
+ * @param {Object} response - API response
+ * @returns {Object} Pagination info
+ */
+export function extractPaginationInfo(response) {
+  if (!response || !response.data) {
+    return { page: 0, size: 20, total: 0, totalPages: 0 };
+  }
+
+  const data = response.data;
+  return {
+    page: data.page !== undefined ? data.page : 0,
+    size: data.size !== undefined ? data.size : (data.content ? data.content.length : 20),
+    total: data.total !== undefined ? data.total : (data.content ? data.content.length : 0),
+    totalPages: data.totalPages !== undefined ? data.totalPages : 1
+  };
+}
+
+/**
  * Debounce function
  * @param {Function} func - Function to debounce
  * @param {number} wait - Wait time in milliseconds

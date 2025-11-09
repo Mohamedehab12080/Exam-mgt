@@ -1,4 +1,6 @@
-// Courses API Client
+import { API_CONFIG } from './config.js';
+import { api, handleAPIResponse, handleAPIError } from './config.js';
+import './types.js'
 class CoursesAPI {
   constructor() {
     this.endpoint = API_CONFIG.ENDPOINTS.COURSES;
@@ -45,8 +47,6 @@ class CoursesAPI {
    * @param {Object} courseData - Course data
    * @param {string} courseData.courseName - Course name
    * @param {number} courseData.duration - Course duration in hours
-   * @param {boolean} courseData.hasExams - Whether course has exams
-   * @param {boolean} courseData.hasQuestions - Whether course has questions
    * @returns {Promise<Object>} Created course data
    */
   async create(courseData) {
@@ -92,28 +92,28 @@ class CoursesAPI {
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Courses with exams
    */
-  async getCoursesWithExams(params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/with-exams`, params);
-      return handleAPIResponse(response, 'Courses with exams loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load courses with exams');
-    }
-  }
+  // async getCoursesWithExams(params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/with-exams`, params);
+  //     return handleAPIResponse(response, 'Courses with exams loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load courses with exams');
+  //   }
+  // }
 
   /**
    * Get courses with questions
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Courses with questions
    */
-  async getCoursesWithQuestions(params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/with-questions`, params);
-      return handleAPIResponse(response, 'Courses with questions loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load courses with questions');
-    }
-  }
+  // async getCoursesWithQuestions(params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/with-questions`, params);
+  //     return handleAPIResponse(response, 'Courses with questions loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load courses with questions');
+  //   }
+  // }
 
   /**
    * Get course statistics
@@ -133,14 +133,14 @@ class CoursesAPI {
    * @param {Object} params - Query parameters for filtering
    * @returns {Promise<Object>} Course count
    */
-  async countCourses(params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/count`, params);
-      return handleAPIResponse(response, 'Course count loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load course count');
-    }
-  }
+  // async countCourses(params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/count`, params);
+  //     return handleAPIResponse(response, 'Course count loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load course count');
+  //   }
+  // }
 
   /**
    * Get questions for a specific course
@@ -148,14 +148,14 @@ class CoursesAPI {
    * @param {Object} params - Query parameters for filtering
    * @returns {Promise<Object>} Course questions
    */
-  async getCourseQuestions(courseId, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/${courseId}/questions`, params);
-      return handleAPIResponse(response, 'Course questions loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load course questions');
-    }
-  }
+  // async getCourseQuestions(courseId, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/${courseId}/questions`, params);
+  //     return handleAPIResponse(response, 'Course questions loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load course questions');
+  //   }
+  // }
 
   /**
    * Validate course data
@@ -170,7 +170,7 @@ class CoursesAPI {
       errors.courseName = 'Course name is required';
     } else if (courseData.courseName.length < 3) {
       errors.courseName = 'Course name must be at least 3 characters';
-    } else if (courseData.courseName.length > 200) {
+    } else if (courseData.courseName.length > 100) { // Swagger: maxLength: 100
       errors.courseName = 'Course name must be less than 200 characters';
     }
 
@@ -181,15 +181,6 @@ class CoursesAPI {
       errors.duration = 'Duration must be a positive integer';
     } else if (courseData.duration > 1000) {
       errors.duration = 'Duration must be less than 1000 hours';
-    }
-
-    // Boolean fields validation
-    if (courseData.hasExams !== undefined && typeof courseData.hasExams !== 'boolean') {
-      errors.hasExams = 'Has exams must be a boolean value';
-    }
-
-    if (courseData.hasQuestions !== undefined && typeof courseData.hasQuestions !== 'boolean') {
-      errors.hasQuestions = 'Has questions must be a boolean value';
     }
 
     return {
@@ -204,15 +195,49 @@ class CoursesAPI {
    * @returns {Object} Formatted course data
    */
   formatCourseData(course) {
+    if (!course) return null;
+
     return {
       ...course,
+      // Basic formatting
       formattedDuration: this.formatDuration(course.duration),
-      hasExamsBadge: this.formatBooleanBadge(course.hasExams),
-      hasQuestionsBadge: this.formatBooleanBadge(course.hasQuestions),
-      displayName: this.formatDisplayName(course.courseName)
+      displayName: this.formatDisplayName(course.courseName),
+
+      // Statistics formatting - FIXED: properly access mcqCount and tfCount
+      statistics: course.statistics ? {
+        ...course.statistics,
+        formattedAverageGrade: course.statistics.averageGrade !== null &&
+        course.statistics.averageGrade !== undefined ?
+            `${course.statistics.averageGrade.toFixed(1)}%` : 'N/A',
+        hasExams: (course.statistics.totalExams || 0) > 0,
+        hasQuestions: (course.statistics.totalQuestions || 0) > 0,
+        // Add formatted counts for display
+        formattedMcqCount: course.statistics.mcqCount || 0,
+        formattedTfCount: course.statistics.tfCount || 0
+      } : null,
+
+      // Questions count by type - FIXED: properly access mcqCount and tfCount
+      questionCounts: {
+        total: course.statistics?.totalQuestions || 0,
+        mcq: course.statistics?.mcqCount || 0,      // ✅ Fixed
+        tf: course.statistics?.tfCount || 0         // ✅ Fixed
+      },
+
+      // UI badges
+      hasExamsBadge: this.formatBooleanBadge((course.statistics?.totalExams || 0) > 0),
+      hasQuestionsBadge: this.formatBooleanBadge((course.statistics?.totalQuestions || 0) > 0),
+      studentCountBadge: this.formatStudentCount(course.statistics?.totalStudents),
+
+      // Additional formatted data for UI
+      examCount: course.statistics?.totalExams || 0,
+      attemptCount: course.statistics?.totalAttempts || 0
     };
   }
 
+  formatStudentCount(count) {
+    if (!count) return '<span class="status-badge status-inactive">No Students</span>';
+    return `<span class="status-badge status-info"><i class="fas fa-users"></i> ${count} Students</span>`;
+  }
   /**
    * Format duration in hours
    * @param {number} duration - Duration in hours
@@ -266,16 +291,10 @@ class CoursesAPI {
    */
   buildQueryParams(filters) {
     const params = {};
-    
-    if (filters.name) params.name = filters.name.trim();
+
+    if (filters.courseName) params.courseName = filters.courseName.trim();
     if (filters.minDuration) params.minDuration = parseInt(filters.minDuration);
     if (filters.maxDuration) params.maxDuration = parseInt(filters.maxDuration);
-    if (filters.hasExams !== undefined && filters.hasExams !== '') {
-      params.hasExams = filters.hasExams === 'true';
-    }
-    if (filters.hasQuestions !== undefined && filters.hasQuestions !== '') {
-      params.hasQuestions = filters.hasQuestions === 'true';
-    }
     if (filters.page) params.page = parseInt(filters.page);
     if (filters.size) params.size = parseInt(filters.size);
     

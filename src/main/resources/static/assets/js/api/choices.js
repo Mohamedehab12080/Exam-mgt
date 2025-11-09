@@ -1,4 +1,6 @@
-// Choices API Client
+import { API_CONFIG } from './config.js';
+import { api, handleAPIResponse, handleAPIError } from './config.js';
+import './types.js'
 class ChoicesAPI {
   constructor() {
     this.endpoint = API_CONFIG.ENDPOINTS.CHOICES;
@@ -86,20 +88,20 @@ class ChoicesAPI {
     }
   }
 
-  /**
-   * Get choices by question
-   * @param {number} questionId - Question ID
-   * @param {Object} params - Query parameters
-   * @returns {Promise<Object>} Question choices
-   */
-  async getChoicesByQuestion(questionId, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/question/${questionId}`, params);
-      return handleAPIResponse(response, 'Question choices loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load question choices');
-    }
-  }
+   /**
+    * Get choices by question
+    * @param {number} questionId - Question ID
+    * @param {Object} params - Query parameters
+    * @returns {Promise<Object>} Question choices
+    */
+  // async getChoicesByQuestion(questionId, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/question/${questionId}`, params);
+  //     return handleAPIResponse(response, 'Question choices loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load question choices');
+  //   }
+  // }
 
   /**
    * Get correct choices by question
@@ -107,14 +109,14 @@ class ChoicesAPI {
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Correct choices
    */
-  async getCorrectChoicesByQuestion(questionId, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/question/${questionId}/correct`, params);
-      return handleAPIResponse(response, 'Correct choices loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load correct choices');
-    }
-  }
+  // async getCorrectChoicesByQuestion(questionId, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/question/${questionId}/correct`, params);
+  //     return handleAPIResponse(response, 'Correct choices loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load correct choices');
+  //   }
+  // }
 
   /**
    * Get incorrect choices by question
@@ -122,14 +124,14 @@ class ChoicesAPI {
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Incorrect choices
    */
-  async getIncorrectChoicesByQuestion(questionId, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/question/${questionId}/incorrect`, params);
-      return handleAPIResponse(response, 'Incorrect choices loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load incorrect choices');
-    }
-  }
+  // async getIncorrectChoicesByQuestion(questionId, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/question/${questionId}/incorrect`, params);
+  //     return handleAPIResponse(response, 'Incorrect choices loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load incorrect choices');
+  //   }
+  // }
 
   /**
    * Get choices statistics
@@ -149,14 +151,14 @@ class ChoicesAPI {
    * @param {Object} params - Query parameters for filtering
    * @returns {Promise<Object>} Choice count
    */
-  async countChoices(params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/count`, params);
-      return handleAPIResponse(response, 'Choice count loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load choice count');
-    }
-  }
+  // async countChoices(params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/count`, params);
+  //     return handleAPIResponse(response, 'Choice count loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load choice count');
+  //   }
+  // }
 
   /**
    * Validate choice data
@@ -166,24 +168,22 @@ class ChoicesAPI {
   validateChoiceData(choiceData) {
     const errors = {};
 
-    // Choice text validation
-    if (!choiceData.choiceText) {
-      errors.choiceText = 'Choice text is required';
-    } else if (choiceData.choiceText.length < 1) {
-      errors.choiceText = 'Choice text must be at least 1 character';
-    } else if (choiceData.choiceText.length > 500) {
-      errors.choiceText = 'Choice text must be less than 500 characters';
-    }
-
-    // Question ID validation
+    // Required fields from Swagger
     if (!choiceData.questionId) {
       errors.questionId = 'Question ID is required';
     } else if (!Number.isInteger(choiceData.questionId) || choiceData.questionId <= 0) {
       errors.questionId = 'Question ID must be a positive integer';
     }
 
-    // Boolean fields validation
-    if (choiceData.isCorrect !== undefined && typeof choiceData.isCorrect !== 'boolean') {
+    if (!choiceData.choiceText) {
+      errors.choiceText = 'Choice text is required';
+    } else if (choiceData.choiceText.length > 300) { // FIX: 300 from Swagger, not 500
+      errors.choiceText = 'Choice text must be less than 300 characters';
+    }
+
+    if (choiceData.isCorrect === undefined) {
+      errors.isCorrect = 'Is correct field is required';
+    } else if (typeof choiceData.isCorrect !== 'boolean') {
       errors.isCorrect = 'Is correct must be a boolean value';
     }
 
@@ -288,27 +288,6 @@ class ChoicesAPI {
   formatLetterBadge(letter, isCorrect) {
     const badgeClass = isCorrect === true ? 'status-success' : 'status-primary';
     return `<span class="status-badge ${badgeClass}">${letter}</span>`;
-  }
-
-  /**
-   * Build query parameters for filtering
-   * @param {Object} filters - Filter criteria
-   * @returns {Object} Query parameters
-   */
-  buildQueryParams(filters) {
-    const params = {};
-    
-    if (filters.choiceText) params.choiceText = filters.choiceText.trim();
-    if (filters.questionId) params.questionId = parseInt(filters.questionId);
-    if (filters.isCorrect !== undefined && filters.isCorrect !== '') {
-      params.isCorrect = filters.isCorrect === 'true';
-    }
-    if (filters.orderBy) params.orderBy = filters.orderBy;
-    if (filters.orderDirection) params.orderDirection = filters.orderDirection;
-    if (filters.page) params.page = parseInt(filters.page);
-    if (filters.size) params.size = parseInt(filters.size);
-    
-    return params;
   }
 
   /**

@@ -1,5 +1,5 @@
-// Main Application JavaScript
 class ExamManagementApp {
+
   constructor() {
     this.currentSection = 'dashboard';
     this.isLoading = false;
@@ -138,6 +138,62 @@ class ExamManagementApp {
     document.addEventListener('click', (e) => {
       if (e.target.classList.contains('modal')) {
         this.modalManager.hide();
+      }
+    });
+
+    // Attempts-specific event listeners
+    this.setupAttemptsEventListeners();
+  }
+
+  /**
+   * Setup attempts-specific event listeners
+   */
+  setupAttemptsEventListeners() {
+    // Page size change
+    const pageSizeSelect = document.getElementById('attemptsPageSize');
+    if (pageSizeSelect) {
+      pageSizeSelect.addEventListener('change', () => {
+        this.currentPage = 1;
+        this.loadAttempts();
+      });
+    }
+
+    // Refresh button
+    const refreshBtn = document.getElementById('refreshAttempts');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        this.loadAttempts();
+      });
+    }
+
+    // Clear filters
+    const clearFiltersBtn = document.getElementById('clearAttemptFilters');
+    if (clearFiltersBtn) {
+      clearFiltersBtn.addEventListener('click', () => {
+        this.clearAttemptFilters();
+      });
+    }
+
+    // Apply filters
+    const applyFiltersBtn = document.getElementById('applyAttemptFilters');
+    if (applyFiltersBtn) {
+      applyFiltersBtn.addEventListener('click', () => {
+        this.currentPage = 1;
+        this.loadAttempts();
+      });
+    }
+
+    // Enter key in search fields
+    const searchFields = ['attemptStudentSsn', 'attemptExamId'];
+    searchFields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            this.currentPage = 1;
+            this.loadAttempts();
+          }
+        });
       }
     });
   }
@@ -287,7 +343,7 @@ class ExamManagementApp {
       this.renderDashboardStats(stats);
 
       // Load recent activities
-      const activities = await this.loadRecentActivities();
+      const activities = this.loadRecentActivities();
       this.renderRecentActivities(activities);
 
       // Load API health
@@ -305,33 +361,34 @@ class ExamManagementApp {
    * Load dashboard statistics
    * @returns {Object} Statistics data
    */
-  async loadDashboardStats() {
+  async loadDashboardStats(params = {}) {
     try {
       // Try to load from APIs, fallback to mock data if APIs not available
       let studentStats, courseStats, examStats, attemptStats;
 
       try {
-        if (typeof studentAPI !== 'undefined') {
-          studentStats = await studentAPI.getAll(1, 1);
+        if (typeof studentsAPI!== 'undefined') {
+          studentStats = await studentsAPI.getAll(1, 1);
         }
-        if (typeof courseAPI !== 'undefined') {
-          courseStats = await courseAPI.getAll(1, 1);
+        if (typeof studentsAPI !== 'undefined') {
+          courseStats = await studentsAPI.getAll(1, 1);
         }
-        if (typeof examAPI !== 'undefined') {
-          examStats = await examAPI.getAll(1, 1);
+        if (typeof studentsAPI !== 'undefined') {
+          examStats = await studentsAPI.getAll(1, 1);
         }
-        if (typeof attemptAPI !== 'undefined') {
-          attemptStats = await attemptAPI.getAll(1, 1);
+        if (typeof attemptsAPI !== 'undefined') {
+          // Use the new attemptsAPI with proper parameters
+          attemptStats = await attemptsAPI.getAll({ page: 0, size: 1 });
         }
       } catch (apiError) {
         console.warn('API not available, using mock data:', apiError);
       }
 
       return {
-        students: studentStats?.total || Math.floor(Math.random() * 100) + 50,
-        courses: courseStats?.total || Math.floor(Math.random() * 20) + 10,
-        exams: examStats?.total || Math.floor(Math.random() * 30) + 15,
-        attempts: attemptStats?.total || Math.floor(Math.random() * 200) + 100
+        students: studentStats?.total || studentStats?.totalElements || Math.floor(Math.random() * 100) + 50,
+        courses: courseStats?.total || courseStats?.totalElements || Math.floor(Math.random() * 20) + 10,
+        exams: examStats?.total || examStats?.totalElements || Math.floor(Math.random() * 30) + 15,
+        attempts: attemptStats?.total || attemptStats?.totalElements || Math.floor(Math.random() * 200) + 100
       };
     } catch (error) {
       console.error('Failed to load dashboard stats:', error);
@@ -473,7 +530,8 @@ class ExamManagementApp {
       { name: 'Students API', status: 'healthy', response: `${this.getRandomNumber(30, 60)}ms` },
       { name: 'Courses API', status: 'healthy', response: `${this.getRandomNumber(25, 55)}ms` },
       { name: 'Exams API', status: 'healthy', response: `${this.getRandomNumber(40, 70)}ms` },
-      { name: 'Questions API', status: 'healthy', response: `${this.getRandomNumber(35, 65)}ms` }
+      { name: 'Questions API', status: 'healthy', response: `${this.getRandomNumber(35, 65)}ms` },
+      { name: 'Attempts API', status: 'healthy', response: `${this.getRandomNumber(30, 60)}ms` }
     ];
 
     healthContainer.innerHTML = endpoints.map(endpoint => `
@@ -591,6 +649,824 @@ class ExamManagementApp {
   // Add other form methods similarly...
 
   /**
+   * Load students data
+   */
+  async loadStudents() {
+    try {
+      this.showLoading();
+
+      // Load students from API
+      const response = await studentsAPI.getAll(this.currentPage, 1);
+      this.renderStudentsTable(response.content || []);
+      this.renderPagination('studentsPagination', response.totalPages || 1, this.currentPage);
+
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load students:', error);
+      this.showError('Failed to load students data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Load courses data
+   */
+  async loadCourses() {
+    try {
+      this.showLoading();
+
+      // Load courses from API
+      const response = await coursesAPI.getAll(this.currentPage, 1);
+      this.renderCoursesTable(response.content || []);
+      this.renderPagination('coursesPagination', response.totalPages || 1, this.currentPage);
+
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load courses:', error);
+      this.showError('Failed to load courses data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Load exams data
+   */
+  async loadExams() {
+    try {
+      this.showLoading();
+
+      // Load exams from API
+      const response = await examsAPI.getAll(this.currentPage, 1);
+      this.renderExamsTable(response.content || []);
+      this.renderPagination('examsPagination', response.totalPages || 1, this.currentPage);
+
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load exams:', error);
+      this.showError('Failed to load exams data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Load questions data
+   */
+  async loadQuestions() {
+    try {
+      this.showLoading();
+
+      // Load questions from API
+      const response = await questionsAPI.getAll(this.currentPage, 1);
+      this.renderQuestionsTable(response.content || []);
+      this.renderPagination('questionsPagination', response.totalPages || 1, this.currentPage);
+
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load questions:', error);
+      this.showError('Failed to load questions data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Load attempts data with Swagger-compliant parameters
+   */
+  async loadAttempts() {
+    try {
+      this.showLoading();
+
+      // Build query parameters according to Swagger spec
+      const filters = this.getAttemptFilters();
+      const queryParams = attemptsAPI.buildQueryParams(filters);
+
+      // Load attempts from API
+      const response = await attemptsAPI.getAll(queryParams);
+
+      // Handle paginated response
+      const attempts = response.content || response.data || [];
+      const totalElements = response.totalElements || response.total || 0;
+      const totalPages = response.totalPages || 1;
+
+      this.renderAttemptsTable(attempts);
+      this.renderAttemptsPagination(totalPages, this.currentPage, totalElements);
+      this.updateAttemptsStats(attempts);
+
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load attempts:', error);
+      this.showError('Failed to load attempts data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Get current attempt filters from UI
+   * @returns {Object} Filters object
+   */
+  getAttemptFilters() {
+    return {
+      studentSsn: document.getElementById('attemptStudentSsn')?.value || '',
+      examId: document.getElementById('attemptExamId')?.value || '',
+      attemptDate: document.getElementById('attemptDateFilter')?.value || '',
+      sortBy: document.getElementById('attemptSortBy')?.value || 'attemptDate',
+      sortDir: document.getElementById('attemptSortDir')?.value || 'DESC',
+      page: this.currentPage - 1, // Swagger uses 0-based indexing
+      size: parseInt(document.getElementById('attemptsPageSize')?.value || '20')
+    };
+  }
+
+  /**
+   * Clear attempt filters
+   */
+  clearAttemptFilters() {
+    document.getElementById('attemptStudentSsn').value = '';
+    document.getElementById('attemptExamId').value = '';
+    document.getElementById('attemptDateFilter').value = '';
+    document.getElementById('attemptSortBy').value = 'attemptDate';
+    document.getElementById('attemptSortDir').value = 'DESC';
+
+    this.currentPage = 1;
+    this.loadAttempts();
+  }
+
+  /**
+   * Load choices data
+   */
+  async loadChoices() {
+    try {
+      this.showLoading();
+
+      // Load choices from API
+      const response = await choiceAPI.getAll(this.currentPage, 1);
+      this.renderChoicesTable(response.content || []);
+      this.renderPagination('choicesPagination', response.totalPages || 1, this.currentPage);
+
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load choices:', error);
+      this.showError('Failed to load choices data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Render students table
+   * @param {Array} students - Students data
+   */
+  renderStudentsTable(students) {
+    const tbody = document.getElementById('studentsTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = students.map(student => `
+      <tr>
+        <td>${student.ssn || 'N/A'}</td>
+        <td>${student.name || 'N/A'}</td>
+        <td>${student.email || 'N/A'}</td>
+        <td>${student.age || 'N/A'}</td>
+        <td>${student.gender || 'N/A'}</td>
+        <td>${student.city || 'N/A'}</td>
+        <td>${student.graduationYear || 'N/A'}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="app.editStudent('${student.ssn}')">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="app.deleteStudent('${student.ssn}')">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  /**
+   * Render courses table
+   * @param {Array} courses - Courses data
+   */
+  renderCoursesTable(courses) {
+    const tbody = document.getElementById('coursesTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = courses.map(course => `
+      <tr>
+        <td>${course.courseId || 'N/A'}</td>
+        <td>${course.courseName || 'N/A'}</td>
+        <td>${course.duration || 'N/A'}</td>
+        <td>${course.hasExams ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
+        <td>${course.hasQuestions ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="app.editCourse(${course.id})">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="app.deleteCourse(${course.id})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  /**
+   * Render exams table
+   * @param {Array} exams - Exams data
+   */
+  renderExamsTable(exams) {
+    const tbody = document.getElementById('examsTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = exams.map(exam => `
+      <tr>
+        <td>${exam.examId || 'N/A'}</td>
+        <td>${exam.title || 'N/A'}</td>
+        <td>${exam.courseName || 'N/A'}</td>
+        <td>${exam.duration || 'N/A'}</td>
+        <td>${exam.numMcq || 0}</td>
+        <td>${exam.numTf || 0}</td>
+        <td>${exam.examDate || 'N/A'}</td>
+        <td>${exam.choices && exam.choices.length || 0}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="app.editExam(${exam.examId})">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="app.deleteExam(${exam.examId})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  /**
+   * Render questions table
+   * @param {Array} questions - Questions data
+   */
+  renderQuestionsTable(questions) {
+    const tbody = document.getElementById('questionsTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = questions.map(question => `
+      <tr>
+        <td>${question.questionId || 'N/A'}</td>
+        <td>${question.questionText || 'N/A'}</td>
+        <td>${question.type || 'N/A'}</td>
+        <td>${question.courseName || 'N/A'}</td>
+        <td>${question.choices && question.choices.length || 0}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="app.editQuestion(${question.questionId})">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="app.deleteQuestion(${question.questionId})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  /**
+   * Render attempts table with formatted data
+   * @param {Array} attempts - Attempts data
+   */
+  renderAttemptsTable(attempts) {
+    const tbody = document.getElementById('attemptsTableBody');
+    if (!tbody) return;
+
+    if (attempts.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="no-data">
+            <i class="fas fa-inbox"></i>
+            <p>No attempts found</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = attempts.map(attempt => {
+      const formattedAttempt = attemptsAPI.formatAttemptData(attempt);
+
+      return `
+        <tr>
+          <td>${formattedAttempt.attemptId || 'N/A'}</td>
+          <td>${formattedAttempt.studentName || 'N/A'}</td>
+          <td>${formattedAttempt.studentSsn || 'N/A'}</td>
+          <td>${formattedAttempt.examTitle || 'N/A'}</td>
+          <td>${formattedAttempt.formattedAttemptDate}</td>
+          <td style="color: ${formattedAttempt.gradeColor}">
+            ${formattedAttempt.grade !== null ? formattedAttempt.grade + '%' : 'N/A'}
+          </td>
+          <td>${formattedAttempt.statusBadge}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="app.viewAttempt(${formattedAttempt.attemptId})" title="View Details">
+              <i class="fas fa-eye"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  /**
+   * Render choices table
+   * @param {Array} choices - Choices data
+   */
+  renderChoicesTable(choices) {
+    const tbody = document.getElementById('choicesTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = choices.map(choice => `
+      <tr>
+        <td>${choice.choiceId || 'N/A'}</td>
+        <td>${choice.questionId || 'N/A'}</td>
+        <td>${choice.questionText || 'N/A'}</td>
+        <td>${choice.isCorrect ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="app.editChoice(${choice.id})">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="app.deleteChoice(${choice.id})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  /**
+   * Render pagination
+   * @param {string} containerId - Pagination container ID
+   * @param {number} totalPages - Total pages
+   * @param {number} currentPage - Current page
+   */
+  renderPagination(containerId, totalPages, currentPage) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let paginationHTML = '';
+
+    // Previous button
+    paginationHTML += `
+      <button class="btn btn-sm ${currentPage === 1 ? 'btn-secondary disabled' : 'btn-primary'}" 
+              onclick="app.changePage(${currentPage - 1})" 
+              ${currentPage === 1 ? 'disabled' : ''}>
+        Previous
+      </button>
+    `;
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+        paginationHTML += `
+          <button class="btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-secondary'}" 
+                  onclick="app.changePage(${i})">
+            ${i}
+          </button>
+        `;
+      } else if (i === currentPage - 2 || i === currentPage + 2) {
+        paginationHTML += '<span class="pagination-dots">...</span>';
+      }
+    }
+
+    // Next button
+    paginationHTML += `
+      <button class="btn btn-sm ${currentPage === totalPages ? 'btn-secondary disabled' : 'btn-primary'}" 
+              onclick="app.changePage(${currentPage + 1})" 
+              ${currentPage === totalPages ? 'disabled' : ''}>
+        Next
+      </button>
+    `;
+
+    container.innerHTML = paginationHTML;
+  }
+
+  /**
+   * Render attempts pagination
+   * @param {number} totalPages - Total pages
+   * @param {number} currentPage - Current page
+   * @param {number} totalElements - Total elements
+   */
+  renderAttemptsPagination(totalPages, currentPage, totalElements) {
+    const container = document.getElementById('attemptsPagination');
+    const startElement = (currentPage - 1) * this.getAttemptFilters().size + 1;
+    const endElement = Math.min(currentPage * this.getAttemptFilters().size, totalElements);
+
+    // Update pagination info
+    const startElementEl = document.getElementById('attemptsStart');
+    const endElementEl = document.getElementById('attemptsEnd');
+    const totalElementsEl = document.getElementById('attemptsTotal');
+
+    if (startElementEl) startElementEl.textContent = startElement.toString();
+    if (endElementEl) endElementEl.textContent = endElement.toString();
+    if (totalElementsEl) totalElementsEl.textContent = totalElements.toString();
+
+    if (!container) return;
+
+    let paginationHTML = '';
+
+    // Previous button
+    paginationHTML += `
+      <button class="btn btn-sm ${currentPage === 1 ? 'btn-secondary disabled' : 'btn-primary'}" 
+              onclick="app.changePage(${currentPage - 1})" 
+              ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    `;
+
+    // Page numbers
+    const visiblePages = this.getVisiblePages(currentPage, totalPages);
+    visiblePages.forEach(page => {
+      if (page === '...') {
+        paginationHTML += '<span class="pagination-dots">...</span>';
+      } else {
+        paginationHTML += `
+          <button class="btn btn-sm ${page === currentPage ? 'btn-primary' : 'btn-secondary'}" 
+                  onclick="app.changePage(${page})">
+            ${page}
+          </button>
+        `;
+      }
+    });
+
+    // Next button
+    paginationHTML += `
+      <button class="btn btn-sm ${currentPage === totalPages ? 'btn-secondary disabled' : 'btn-primary'}" 
+              onclick="app.changePage(${currentPage + 1})" 
+              ${currentPage === totalPages ? 'disabled' : ''}>
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    `;
+
+    container.innerHTML = paginationHTML;
+  }
+
+  /**
+   * Update attempts statistics
+   * @param {Array} attempts - Attempts data
+   */
+  updateAttemptsStats(attempts) {
+    const totalCount = attempts.length;
+    const averageGrade = attempts.length > 0
+        ? (attempts.reduce((sum, attempt) => sum + (attempt.grade || 0), 0) / attempts.length).toFixed(1)
+        : null;
+
+    const totalCountEl = document.getElementById('totalAttemptsCount');
+    const averageGradeEl = document.getElementById('averageGrade');
+
+    if (totalCountEl) totalCountEl.textContent = totalCount.toString();
+    if (averageGradeEl) averageGradeEl.textContent = averageGrade ? `${averageGrade}%` : 'N/A';
+  }
+
+  /**
+   * Get visible pages for pagination
+   * @param {number} currentPage - Current page
+   * @param {number} totalPages - Total pages
+   * @returns {Array} Array of page numbers
+   */
+  getVisiblePages(currentPage, totalPages) {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, '...');
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push('...', totalPages);
+    } else {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
+  }
+
+  /**
+   * Change page
+   * @param {number} page - New page number
+   */
+  async changePage(page) {
+    if (page < 1) return;
+
+    this.currentPage = page;
+    await this.loadSectionData(this.currentSection);
+  }
+
+  /**
+   * Edit student
+   * @param {string} ssn - Student SSN
+   */
+  async editStudent(ssn) {
+    try {
+      this.showLoading();
+      const student = await studentsAPI.getById(ssn);
+      this.showForm('Edit Student', student);
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load student:', error);
+      this.showError('Failed to load student data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Delete student
+   * @param {string} ssn - Student SSN
+   */
+  async deleteStudent(ssn) {
+    if (!confirm('Are you sure you want to delete this student?')) return;
+
+    try {
+      this.showLoading();
+      await studentsAPI.delete(ssn);
+      this.toastManager.show('Student deleted successfully!', 'success');
+      await this.loadStudents();
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to delete student:', error);
+      this.showError('Failed to delete student');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Edit course
+   * @param {number} id - Course ID
+   */
+  async editCourse(id) {
+    try {
+      this.showLoading();
+      const course = await coursesAPI.getById(id);
+      this.showForm('Edit Course', course);
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load course:', error);
+      this.showError('Failed to load course data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Delete course
+   * @param {number} id - Course ID
+   */
+  async deleteCourse(id) {
+    if (!confirm('Are you sure you want to delete this course?')) return;
+
+    try {
+      this.showLoading();
+      await coursesAPI.delete(id);
+      this.toastManager.show('Course deleted successfully!', 'success');
+      await this.loadCourses();
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to delete course:', error);
+      this.showError('Failed to delete course');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Edit exam
+   * @param {number} id - Exam ID
+   */
+  async editExam(id) {
+    try {
+      this.showLoading();
+      const exam = await examsAPI.getById(id);
+      this.showForm('Edit Exam', exam);
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load exam:', error);
+      this.showError('Failed to load exam data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Delete exam
+   * @param {number} id - Exam ID
+   */
+  async deleteExam(id) {
+    if (!confirm('Are you sure you want to delete this exam?')) return;
+
+    try {
+      this.showLoading();
+      await examsAPI.delete(id);
+      this.toastManager.show('Exam deleted successfully!', 'success');
+      await this.loadExams();
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to delete exam:', error);
+      this.showError('Failed to delete exam');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Edit question
+   * @param {number} id - Question ID
+   */
+  async editQuestion(id) {
+    try {
+      this.showLoading();
+      const question = await questionsAPI.getById(id);
+      this.showForm('Edit Question', question);
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load question:', error);
+      this.showError('Failed to load question data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Delete question
+   * @param {number} id - Question ID
+   */
+  async deleteQuestion(id) {
+    if (!confirm('Are you sure you want to delete this question?')) return;
+
+    try {
+      this.showLoading();
+      await questionsAPI.delete(id);
+      this.toastManager.show('Question deleted successfully!', 'success');
+      await this.loadQuestions();
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to delete question:', error);
+      this.showError('Failed to delete question');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * View attempt
+   * @param {number} id - Attempt ID
+   */
+  async viewAttempt(id) {
+    try {
+      this.showLoading();
+      const attempt = await attemptsAPI.getById(id);
+      this.showAttemptDetails(attempt);
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load attempt:', error);
+      this.showError('Failed to load attempt data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Show attempt details in modal
+   * @param {Object} attempt - Attempt data
+   */
+  showAttemptDetails(attempt) {
+    const formattedAttempt = attemptsAPI.formatAttemptData(attempt);
+
+    const content = `
+      <div class="attempt-details">
+        <div class="detail-row">
+          <div class="detail-item">
+            <label>Attempt ID:</label>
+            <span>${formattedAttempt.attemptId || 'N/A'}</span>
+          </div>
+          <div class="detail-item">
+            <label>Student:</label>
+            <span>${formattedAttempt.studentName || 'N/A'} (${formattedAttempt.studentSsn || 'N/A'})</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-item">
+            <label>Exam:</label>
+            <span>${formattedAttempt.examTitle || 'N/A'}</span>
+          </div>
+          <div class="detail-item">
+            <label>Attempt Date:</label>
+            <span>${formattedAttempt.formattedAttemptDate}</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-item">
+            <label>Grade:</label>
+            <span style="color: ${formattedAttempt.gradeColor}; font-weight: bold;">
+              ${formattedAttempt.grade !== null ? formattedAttempt.grade + '%' : 'N/A'}
+            </span>
+          </div>
+          <div class="detail-item">
+            <label>Status:</label>
+            <span>${formattedAttempt.statusBadge}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.modalManager.show({
+      title: 'Attempt Details',
+      content: content,
+      showFooter: false
+    });
+  }
+
+  /**
+   * Edit choice
+   * @param {number} id - Choice ID
+   */
+  async editChoice(id) {
+    try {
+      this.showLoading();
+      const choice = await choiceAPI.getById(id);
+      this.showForm('Edit Choice', choice);
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to load choice:', error);
+      this.showError('Failed to load choice data');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Delete choice
+   * @param {number} id - Choice ID
+   */
+  async deleteChoice(id) {
+    if (!confirm('Are you sure you want to delete this choice?')) return;
+
+    try {
+      this.showLoading();
+      await choiceAPI.delete(id);
+      this.toastManager.show('Choice deleted successfully!', 'success');
+      await this.loadChoices();
+      this.hideLoading();
+    } catch (error) {
+      console.error('Failed to delete choice:', error);
+      this.showError('Failed to delete choice');
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * Show form modal
+   * @param {string} title - Form title
+   * @param {Object} data - Form data
+   * @param {boolean} readOnly - Whether form is read-only
+   */
+  showForm(title, data = null, readOnly = false) {
+    const formConfig = {
+      title: title,
+      fields: this.getFormFields(title, data, readOnly),
+      onSubmit: readOnly ? null : (formData) => this.handleFormSubmit(formData)
+    };
+
+    this.modalManager.show(formConfig);
+  }
+
+  /**
+   * Get form fields based on title and data
+   * @param {string} title - Form title
+   * @param {Object} data - Form data
+   * @param {boolean} readOnly - Whether form is read-only
+   * @returns {Array} Form fields
+   */
+  getFormFields(title, data, readOnly) {
+    // This is a simplified version - you can expand based on your needs
+    const fields = [];
+
+    if (title.includes('Student')) {
+      fields.push(
+          { name: 'ssn', label: 'SSN', type: 'text', required: true, value: data?.ssn || '', disabled: readOnly || !!data?.ssn },
+          { name: 'name', label: 'Name', type: 'text', required: true, value: data?.name || '', disabled: readOnly },
+          { name: 'email', label: 'Email', type: 'email', required: true, value: data?.email || '', disabled: readOnly },
+          { name: 'age', label: 'Age', type: 'number', value: data?.age || '', disabled: readOnly },
+          { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female'], value: data?.gender || '', disabled: readOnly },
+          { name: 'city', label: 'City', type: 'text', value: data?.city || '', disabled: readOnly },
+          { name: 'graduationYear', label: 'Graduation Year', type: 'number', value: data?.graduationYear || '', disabled: readOnly }
+      );
+    } else if (title.includes('Course')) {
+      fields.push(
+          { name: 'name', label: 'Course Name', type: 'text', required: true, value: data?.name || '', disabled: readOnly },
+          { name: 'duration', label: 'Duration (hours)', type: 'number', value: data?.duration || '', disabled: readOnly }
+      );
+    } else if (title.includes('Exam')) {
+      fields.push(
+          { name: 'title', label: 'Exam Title', type: 'text', required: true, value: data?.title || '', disabled: readOnly },
+          { name: 'courseId', label: 'Course', type: 'select', required: true, value: data?.courseId || '', disabled: readOnly },
+          { name: 'duration', label: 'Duration (minutes)', type: 'number', required: true, value: data?.duration || '', disabled: readOnly },
+          { name: 'examDate', label: 'Exam Date', type: 'date', required: true, value: data?.examDate || '', disabled: readOnly }
+      );
+    }
+
+    return fields;
+  }
+
+  /**
    * Handle form submission
    */
   async handleFormSubmit() {
@@ -618,8 +1494,6 @@ class ExamManagementApp {
       form.reportValidity();
     }
   }
-
-  // ... (rest of your methods remain the same with minor adjustments)
 
   /**
    * Show loading state

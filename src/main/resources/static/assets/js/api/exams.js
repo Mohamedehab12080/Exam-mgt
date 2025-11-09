@@ -1,4 +1,7 @@
-// Exams API Client
+// Add at top:
+import { API_CONFIG } from './config.js';
+import { api, handleAPIResponse, handleAPIError } from './config.js';
+import './types.js'
 class ExamsAPI {
   constructor() {
     this.endpoint = API_CONFIG.ENDPOINTS.EXAMS;
@@ -95,14 +98,14 @@ class ExamsAPI {
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Active exams
    */
-  async getActiveExams(params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/active`, params);
-      return handleAPIResponse(response, 'Active exams loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load active exams');
-    }
-  }
+  // async getActiveExams(params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/active`, params);
+  //     return handleAPIResponse(response, 'Active exams loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load active exams');
+  //   }
+  // }
 
   /**
    * Get exams by course
@@ -110,14 +113,14 @@ class ExamsAPI {
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Course exams
    */
-  async getExamsByCourse(courseId, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/course/${courseId}`, params);
-      return handleAPIResponse(response, 'Course exams loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load course exams');
-    }
-  }
+  // async getExamsByCourse(courseId, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/course/${courseId}`, params);
+  //     return handleAPIResponse(response, 'Course exams loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load course exams');
+  //   }
+  // }
 
   /**
    * Get exams by difficulty
@@ -125,14 +128,14 @@ class ExamsAPI {
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Exams by difficulty
    */
-  async getExamsByDifficulty(difficulty, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/difficulty/${difficulty}`, params);
-      return handleAPIResponse(response, 'Exams by difficulty loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load exams by difficulty');
-    }
-  }
+  // async getExamsByDifficulty(difficulty, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/difficulty/${difficulty}`, params);
+  //     return handleAPIResponse(response, 'Exams by difficulty loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load exams by difficulty');
+  //   }
+  // }
 
   /**
    * Get exam statistics
@@ -256,16 +259,35 @@ class ExamsAPI {
    * @returns {Object} Formatted exam data
    */
   formatExamData(exam) {
+    if (!exam) return null;
+
     return {
       ...exam,
+      // Format display data
       formattedDuration: this.formatDuration(exam.duration),
-      difficultyBadge: this.formatDifficultyBadge(exam.difficulty),
-      isActiveBadge: this.formatBooleanBadge(exam.isActive),
+      formattedExamDate: this.formatDateForDisplay(exam.examDate),
       displayTitle: this.formatDisplayTitle(exam.title),
-      difficultyColor: this.getDifficultyColor(exam.difficulty)
+
+      // Use the actual numMcq and numTf from the response
+      questionCounts: {
+        total: (exam.numMcq || 0) + (exam.numTf || 0),
+        mcq: exam.numMcq || 0,
+        tf: exam.numTf || 0
+      },
+
+      // UI badges using actual data
+      hasQuestionsBadge: this.formatBooleanBadge((exam.numMcq || 0) + (exam.numTf || 0) > 0),
+      questionCountBadge: `<span class="status-badge status-info">${(exam.numMcq || 0) + (exam.numTf || 0)} Questions</span>`,
+      mcqCountBadge: exam.numMcq > 0 ?
+          `<span class="status-badge status-primary">${exam.numMcq} MCQ</span>` : '',
+      tfCountBadge: exam.numTf > 0 ?
+          `<span class="status-badge status-secondary">${exam.numTf} T/F</span>` : '',
+
+      // Additional formatting
+      generatedQuestionsCount: exam.questions ? exam.questions.length : 0,
+      hasGeneratedQuestions: exam.questions && exam.questions.length > 0
     };
   }
-
   /**
    * Format duration in minutes
    * @param {number} duration - Duration in minutes
@@ -350,23 +372,27 @@ class ExamsAPI {
    */
   buildQueryParams(filters) {
     const params = {};
-    
+
+    // All Swagger parameters
     if (filters.title) params.title = filters.title.trim();
     if (filters.courseId) params.courseId = parseInt(filters.courseId);
-    if (filters.difficulty) params.difficulty = filters.difficulty;
+    if (filters.examDate) params.examDate = filters.examDate;
+    if (filters.startDate) params.startDate = filters.startDate;
+    if (filters.endDate) params.endDate = filters.endDate;
+    if (filters.duration) params.duration = parseInt(filters.duration);
     if (filters.minDuration) params.minDuration = parseInt(filters.minDuration);
     if (filters.maxDuration) params.maxDuration = parseInt(filters.maxDuration);
-    if (filters.minQuestionCount) params.minQuestionCount = parseInt(filters.minQuestionCount);
-    if (filters.maxQuestionCount) params.maxQuestionCount = parseInt(filters.maxQuestionCount);
-    if (filters.isActive !== undefined && filters.isActive !== '') {
-      params.isActive = filters.isActive === 'true';
-    }
-    if (filters.page) params.page = parseInt(filters.page);
-    if (filters.size) params.size = parseInt(filters.size);
-    
+
+    // Sorting
+    if (filters.sortBy) params.sortBy = filters.sortBy;
+    if (filters.sortDir) params.sortDir = filters.sortDir;
+
+    // Pagination
+    if (filters.page !== undefined) params.page = parseInt(filters.page);
+    if (filters.size !== undefined) params.size = parseInt(filters.size);
+
     return params;
   }
-
   /**
    * Get exam options for dropdowns
    * @returns {Promise<Array>} Exam options

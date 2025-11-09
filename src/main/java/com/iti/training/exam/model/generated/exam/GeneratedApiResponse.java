@@ -39,5 +39,7 @@ public class GeneratedApiResponse implements Serializable {
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private LocalDateTime timestamp;
 
+  private Integer status;
+
 }
 

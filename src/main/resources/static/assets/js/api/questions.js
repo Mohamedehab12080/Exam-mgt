@@ -1,4 +1,7 @@
 // Questions API Client
+import './types.js'
+import { API_CONFIG } from './config.js';
+import { api, handleAPIResponse, handleAPIError } from './config.js';
 class QuestionsAPI {
   constructor() {
     this.endpoint = API_CONFIG.ENDPOINTS.QUESTIONS;
@@ -63,14 +66,14 @@ class QuestionsAPI {
    * @param {Object} questionData - Updated question data
    * @returns {Promise<Object>} Updated question data
    */
-  async update(questionId, questionData) {
-    try {
-      const response = await api.put(`${this.endpoint}/${questionId}`, questionData);
-      return handleAPIResponse(response, 'Question updated successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to update question');
-    }
-  }
+  // async update(questionId, questionData) {
+  //   try {
+  //     const response = await api.put(`${this.endpoint}/${questionId}`, questionData);
+  //     return handleAPIResponse(response, 'Question updated successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to update question');
+  //   }
+  // }
 
   /**
    * Delete a question
@@ -92,14 +95,14 @@ class QuestionsAPI {
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Course questions
    */
-  async getQuestionsByCourse(courseId, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/course/${courseId}`, params);
-      return handleAPIResponse(response, 'Course questions loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load course questions');
-    }
-  }
+  // async getQuestionsByCourse(courseId, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/course/${courseId}`, params);
+  //     return handleAPIResponse(response, 'Course questions loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load course questions');
+  //   }
+  // }
 
   /**
    * Get questions by exam
@@ -107,14 +110,14 @@ class QuestionsAPI {
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Exam questions
    */
-  async getQuestionsByExam(examId, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/exam/${examId}`, params);
-      return handleAPIResponse(response, 'Exam questions loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load exam questions');
-    }
-  }
+  // async getQuestionsByExam(examId, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/exam/${examId}`, params);
+  //     return handleAPIResponse(response, 'Exam questions loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load exam questions');
+  //   }
+  // }
 
   /**
    * Get questions by type
@@ -122,28 +125,28 @@ class QuestionsAPI {
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Questions by type
    */
-  async getQuestionsByType(type, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/type/${type}`, params);
-      return handleAPIResponse(response, 'Questions by type loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load questions by type');
-    }
-  }
+  // async getQuestionsByType(type, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/type/${type}`, params);
+  //     return handleAPIResponse(response, 'Questions by type loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load questions by type');
+  //   }
+  // }
 
   /**
    * Get questions with choices
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} Questions with choices
    */
-  async getQuestionsWithChoices(params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/with-choices`, params);
-      return handleAPIResponse(response, 'Questions with choices loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load questions with choices');
-    }
-  }
+  // async getQuestionsWithChoices(params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/with-choices`, params);
+  //     return handleAPIResponse(response, 'Questions with choices loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load questions with choices');
+  //   }
+  // }
 
   /**
    * Get question statistics
@@ -163,14 +166,14 @@ class QuestionsAPI {
    * @param {Object} params - Query parameters for filtering
    * @returns {Promise<Object>} Question count
    */
-  async countQuestions(params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/count`, params);
-      return handleAPIResponse(response, 'Question count loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load question count');
-    }
-  }
+  // async countQuestions(params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/count`, params);
+  //     return handleAPIResponse(response, 'Question count loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load question count');
+  //   }
+  // }
 
   /**
    * Validate question data
@@ -180,59 +183,27 @@ class QuestionsAPI {
   validateQuestionData(questionData) {
     const errors = {};
 
-    // Question text validation
-    if (!questionData.questionText) {
-      errors.questionText = 'Question text is required';
-    } else if (questionData.questionText.length < 10) {
-      errors.questionText = 'Question text must be at least 10 characters';
-    } else if (questionData.questionText.length > 1000) {
-      errors.questionText = 'Question text must be less than 1000 characters';
-    }
-
-    // Type validation
-    const validTypes = ['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER', 'ESSAY'];
-    if (!questionData.type) {
-      errors.type = 'Question type is required';
-    } else if (!validTypes.includes(questionData.type)) {
-      errors.type = 'Question type must be one of: MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER, ESSAY';
-    }
-
-    // Course ID validation
+    // Required fields from Swagger QuestionDTO
     if (!questionData.courseId) {
       errors.courseId = 'Course ID is required';
     } else if (!Number.isInteger(questionData.courseId) || questionData.courseId <= 0) {
       errors.courseId = 'Course ID must be a positive integer';
     }
 
-    // Exam ID validation (optional)
-    if (questionData.examId !== undefined && questionData.examId !== null) {
-      if (!Number.isInteger(questionData.examId) || questionData.examId <= 0) {
-        errors.examId = 'Exam ID must be a positive integer';
-      }
+    if (!questionData.type) {
+      errors.type = 'Question type is required';
+    } else if (!['MCQ', 'T/F'].includes(questionData.type)) { // FIX: Swagger enum values
+      errors.type = 'Question type must be MCQ or T/F';
     }
 
-    // Difficulty validation
-    if (questionData.difficulty === undefined || questionData.difficulty === null) {
-      errors.difficulty = 'Difficulty level is required';
-    } else if (!Number.isInteger(questionData.difficulty) || questionData.difficulty < 1 || questionData.difficulty > 5) {
-      errors.difficulty = 'Difficulty must be an integer between 1 and 5';
+    if (!questionData.questionText) {
+      errors.questionText = 'Question text is required';
+    } else if (questionData.questionText.length > 500) { // FIX: 500 from Swagger, not 1000
+      errors.questionText = 'Question text must be less than 500 characters';
     }
 
-    // Points validation
-    if (questionData.points === undefined || questionData.points === null) {
-      errors.points = 'Points value is required';
-    } else if (!Number.isInteger(questionData.points) || questionData.points <= 0) {
-      errors.points = 'Points must be a positive integer';
-    } else if (questionData.points > 100) {
-      errors.points = 'Points must be less than or equal to 100';
-    }
-
-    // Correct answer validation (optional but recommended)
-    if (questionData.correctAnswer !== undefined && questionData.correctAnswer !== null) {
-      if (questionData.correctAnswer.length > 500) {
-        errors.correctAnswer = 'Correct answer must be less than 500 characters';
-      }
-    }
+    // REMOVE: These fields are not in QuestionDTO
+    // difficulty, points, examId, correctAnswer
 
     return {
       isValid: Object.keys(errors).length === 0,
@@ -264,10 +235,8 @@ class QuestionsAPI {
    */
   formatTypeBadge(type) {
     const typeConfig = {
-      MULTIPLE_CHOICE: { icon: 'fa-list', class: 'status-primary', text: 'Multiple Choice' },
-      TRUE_FALSE: { icon: 'fa-check-circle', class: 'status-success', text: 'True/False' },
-      SHORT_ANSWER: { icon: 'fa-edit', class: 'status-warning', text: 'Short Answer' },
-      ESSAY: { icon: 'fa-file-alt', class: 'status-info', text: 'Essay' }
+      'MCQ': { icon: 'fa-list', class: 'status-primary', text: 'Multiple Choice' },
+      'T/F': { icon: 'fa-check-circle', class: 'status-success', text: 'True/False' }
     };
 
     const config = typeConfig[type] || { icon: 'fa-question', class: 'status-inactive', text: 'Unknown' };
@@ -359,10 +328,8 @@ class QuestionsAPI {
    */
   getTypeOptions() {
     return [
-      { value: 'MULTIPLE_CHOICE', label: 'Multiple Choice', icon: 'fa-list' },
-      { value: 'TRUE_FALSE', label: 'True/False', icon: 'fa-check-circle' },
-      { value: 'SHORT_ANSWER', label: 'Short Answer', icon: 'fa-edit' },
-      { value: 'ESSAY', label: 'Essay', icon: 'fa-file-alt' }
+      { value: 'MCQ', label: 'Multiple Choice', icon: 'fa-list' },
+      { value: 'T/F', label: 'True/False', icon: 'fa-check-circle' }
     ];
   }
 
@@ -387,22 +354,24 @@ class QuestionsAPI {
    */
   buildQueryParams(filters) {
     const params = {};
-    
+
     if (filters.questionText) params.questionText = filters.questionText.trim();
     if (filters.type) params.type = filters.type;
     if (filters.courseId) params.courseId = parseInt(filters.courseId);
-    if (filters.examId) params.examId = parseInt(filters.examId);
-    if (filters.difficulty) params.difficulty = parseInt(filters.difficulty);
-    if (filters.points) params.points = parseInt(filters.points);
     if (filters.hasChoices !== undefined && filters.hasChoices !== '') {
       params.hasChoices = filters.hasChoices === 'true';
     }
-    if (filters.page) params.page = parseInt(filters.page);
-    if (filters.size) params.size = parseInt(filters.size);
-    
+    if (filters.minChoiceCount) params.minChoiceCount = parseInt(filters.minChoiceCount); // ADD
+
+    // ADD sorting parameters
+    if (filters.sortBy) params.sortBy = filters.sortBy;
+    if (filters.sortDir) params.sortDir = filters.sortDir;
+
+    if (filters.page !== undefined) params.page = parseInt(filters.page);
+    if (filters.size !== undefined) params.size = parseInt(filters.size);
+
     return params;
   }
-
   /**
    * Cache management for questions
    */

@@ -1,4 +1,5 @@
 // Students API Client
+import './types.js'
 class StudentsAPI {
   constructor() {
     this.endpoint = API_CONFIG.ENDPOINTS.STUDENTS;
@@ -22,7 +23,7 @@ class StudentsAPI {
    * @param {string} params.sortDir - Sort direction (ASC, DESC)
    * @returns {Promise<Object>} Response data
    */
-  async getAll(params = {}) {
+  async async getAll(params = {})  {
     try {
       const response = await api.get(this.endpoint, params);
       return handleAPIResponse(response, 'Students loaded successfully');
@@ -119,14 +120,14 @@ class StudentsAPI {
    * @param {Object} params - Additional query parameters
    * @returns {Promise<Object>} Students in course
    */
-  async getByCourse(courseId, params = {}) {
-    try {
-      const response = await api.get(`${this.endpoint}/course/${courseId}`, params);
-      return handleAPIResponse(response, 'Course students loaded successfully');
-    } catch (error) {
-      return handleAPIError(error, 'Failed to load course students');
-    }
-  }
+  // async getByCourse(courseId, params = {}) {
+  //   try {
+  //     const response = await api.get(`${this.endpoint}/course/${courseId}`, params);
+  //     return handleAPIResponse(response, 'Course students loaded successfully');
+  //   } catch (error) {
+  //     return handleAPIError(error, 'Failed to load course students');
+  //   }
+  // }
 
   /**
    * Get student statistics
@@ -302,16 +303,33 @@ class StudentsAPI {
    * @returns {Object} Formatted student data
    */
   formatStudentData(student) {
+    if (!student) return null;
+
     return {
       ...student,
+      // Basic formatting
       formattedSSN: this.formatSSN(student.ssn),
-      formattedAge: `${student.age} years`,
+      displayName: `${student.firstName} ${student.lastName}`,
       formattedGraduationYear: student.graduationYear ? student.graduationYear.toString() : 'N/A',
-      initials: this.getInitials(student.name),
-      displayName: this.formatDisplayName(student.name)
+      formattedBirthdate: this.formatDateForDisplay(student.birthdate),
+        formattedPhone: this.formatPhone(student.phone),
+
+      // Use the calculated age from backend
+      formattedAge: student.age ? `${student.age} years` : 'N/A',
+
+      // UI elements
+      initials: this.getInitials(student.firstName, student.lastName),
+      emailBadge: `<span class="status-badge status-info"><i class="fas fa-envelope"></i> ${student.email}</span>`,
+      cityBadge: student.city ? `<span class="status-badge status-secondary"><i class="fas fa-city"></i> ${student.city}</span>` : '',
+
+      // Attempt statistics
+      attemptCount: student.attempts ? student.attempts.length : 0,
+      hasAttempts: student.attempts && student.attempts.length > 0,
+      attemptsBadge: student.attempts ?
+          `<span class="status-badge status-primary">${student.attempts.length} Attempts</span>` :
+          '<span class="status-badge status-inactive">No Attempts</span>'
     };
   }
-
   /**
    * Format SSN for display (add spaces)
    * @param {string} ssn - Raw SSN
@@ -322,34 +340,34 @@ class StudentsAPI {
     return `${ssn.substr(0, 3)} ${ssn.substr(3, 3)} ${ssn.substr(6, 4)} ${ssn.substr(10, 4)}`;
   }
 
+  formatPhone(phone) {
+    if (!phone || phone.length !== 11) return phone;
+    return `${phone.substr(0, 3)}-${phone.substr(3, 4)}-${phone.substr(7, 4)}`;
+  }
   /**
    * Get initials from full name
-   * @param {string} name - Full name
+   * @param {string} firstName  - Full name
+   * @param {string} lastName
    * @returns {string} Initials
    */
-  getInitials(name) {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .substr(0, 2);
+  getInitials(firstName, lastName) {
+    if (!firstName && !lastName) return '?';
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   }
 
-  /**
-   * Format display name
-   * @param {string} name - Full name
-   * @returns {string} Formatted name
-   */
-  formatDisplayName(name) {
-    if (!name) return 'Unknown';
-    return name
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+  formatDateForDisplay(dateString) {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString + 'T00:00:00');
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return 'N/A';
+    }
   }
-
   /**
    * Build query parameters for filtering
    * @param {Object} filters - Filter criteria
@@ -357,19 +375,28 @@ class StudentsAPI {
    */
   buildQueryParams(filters) {
     const params = {};
-    
-    if (filters.name) params.name = filters.name.trim();
+
+    // Use Swagger parameter names
+    if (filters.firstName) params.firstName = filters.firstName.trim();
+    if (filters.lastName) params.lastName = filters.lastName.trim();
+    if (filters.email) params.email = filters.email.trim();
     if (filters.gender) params.gender = filters.gender;
     if (filters.minAge) params.minAge = parseInt(filters.minAge);
     if (filters.maxAge) params.maxAge = parseInt(filters.maxAge);
     if (filters.city) params.city = filters.city.trim();
     if (filters.graduationYear) params.graduationYear = parseInt(filters.graduationYear);
-    if (filters.page) params.page = parseInt(filters.page);
-    if (filters.size) params.size = parseInt(filters.size);
-    
+
+    // Use Swagger pagination parameter names
+    if (filters.pageNum !== undefined) params.pageNum = parseInt(filters.pageNum);
+    if (filters.pageSize !== undefined) params.pageSize = parseInt(filters.pageSize);
+    if (filters.noPagination !== undefined) params.noPagination = filters.noPagination === 'true';
+
+    // ADD sorting parameters
+    if (filters.sortBy) params.sortBy = filters.sortBy;
+    if (filters.sortDir) params.sortDir = filters.sortDir;
+
     return params;
   }
-
   /**
    * Cache management for students
    */

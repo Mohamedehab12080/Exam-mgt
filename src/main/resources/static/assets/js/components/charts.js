@@ -1,90 +1,134 @@
-// Charts Component
-class ChartsComponent {
+// Import utilities at the top
+import {
+  formatNumber,
+  formatPercentage,
+  formatCurrency,
+  debounce,
+  generateId,
+  randomColor,
+  showToast,
+  showLoading,
+  hideLoading
+} from 'static/assets/js/utils/index.js';
+
+export class ChartsComponent {
   constructor(containerId, options = {}) {
     this.containerId = containerId;
     this.container = document.getElementById(containerId);
+    this.chartId = generateId('chart');
+
     this.options = {
-      type: 'line', // line, bar, pie, doughnut, radar, polarArea
+      type: 'line',
       data: {},
       options: {},
       responsive: true,
       maintainAspectRatio: false,
       animation: true,
       plugins: [],
+      // Enhanced options with utility integration
+      formatValues: true,
+      showTooltips: true,
+      autoResize: true,
       ...options
     };
-    
+
     this.chart = null;
     this.isVisible = false;
-    
+    this.resizeHandler = null;
+
     this.init();
   }
 
   /**
-   * Initialize charts component
+   * Initialize charts component with enhanced utilities
    */
   init() {
     if (!this.container) {
       console.error(`Container with ID '${this.containerId}' not found`);
+      showToast('Chart container not found', 'error');
       return;
     }
-    
-    this.render();
-    this.createChart();
-    
-    console.log(`Charts component initialized for ${this.containerId}`);
+
+    try {
+      showLoading();
+      this.render();
+      this.createChart();
+      this.setupEventListeners();
+
+      console.log(`Charts component initialized for ${this.containerId}`);
+      showToast('Chart loaded successfully', 'success');
+    } catch (error) {
+      console.error('Failed to initialize chart:', error);
+      showToast('Failed to load chart', 'error');
+    } finally {
+      hideLoading();
+    }
   }
 
   /**
-   * Render chart container
+   * Enhanced render with utility classes
    */
   render() {
     this.container.innerHTML = `
-      <div class="chart-container">
-        <canvas id="${this.containerId}-canvas"></canvas>
+      <div class="chart-container" id="${this.chartId}">
+        <div class="chart-header">
+          <h3 class="chart-title">${this.options.title || 'Chart'}</h3>
+          <div class="chart-actions">
+            <button class="btn btn-sm btn-outline" onclick="chartsComponent.exportAsImage('png')">
+              <i class="fas fa-download"></i> Export
+            </button>
+            <button class="btn btn-sm btn-outline" onclick="chartsComponent.toggleFullscreen()">
+              <i class="fas fa-expand"></i> Expand
+            </button>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="${this.chartId}-canvas"></canvas>
+        </div>
+        <div class="chart-footer">
+          <div class="chart-stats" id="${this.chartId}-stats"></div>
+        </div>
       </div>
     `;
   }
 
   /**
-   * Create chart instance
+   * Enhanced chart creation with utility integration
    */
   createChart() {
-    const canvas = document.getElementById(`${this.containerId}-canvas`);
+    const canvas = document.getElementById(`${this.chartId}-canvas`);
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    
-    // Chart.js configuration
+
     const chartConfig = {
       type: this.options.type,
       data: this.processData(this.options.data),
-      options: this.getChartOptions()
+      options: this.getEnhancedChartOptions()
     };
 
-    // Create chart instance
     this.chart = new Chart(ctx, chartConfig);
     this.isVisible = true;
+
+    // Update stats display
+    this.updateStatsDisplay();
   }
 
   /**
-   * Process chart data
-   * @param {Object} data - Raw data
-   * @returns {Object} Processed data
+   * Enhanced data processing with formatting utilities
    */
   processData(data) {
     const processedData = {
-      labels: data.labels || [],
+      labels: this.formatLabels(data.labels || []),
       datasets: []
     };
 
-    // Process datasets
     if (data.datasets) {
       processedData.datasets = data.datasets.map((dataset, index) => ({
         label: dataset.label || `Dataset ${index + 1}`,
-        data: dataset.data || [],
-        backgroundColor: dataset.backgroundColor || this.getDefaultColor(index, 'background'),
-        borderColor: dataset.borderColor || this.getDefaultColor(index, 'border'),
+        data: this.formatDatasetValues(dataset.data || []),
+        backgroundColor: dataset.backgroundColor || this.getEnhancedColor(index, 'background'),
+        borderColor: dataset.borderColor || this.getEnhancedColor(index, 'border'),
         borderWidth: dataset.borderWidth || 2,
         fill: dataset.fill !== undefined ? dataset.fill : false,
         tension: dataset.tension || 0.4,
@@ -98,10 +142,38 @@ class ChartsComponent {
   }
 
   /**
-   * Get chart options
-   * @returns {Object} Chart options
+   * Format labels using utility functions
    */
-  getChartOptions() {
+  formatLabels(labels) {
+    return labels.map(label => {
+      if (typeof label === 'string' && label.match(/^\d{4}-\d{2}-\d{2}/)) {
+        return formatDate(label, 'MMM DD, YYYY');
+      }
+      return String(label);
+    });
+  }
+
+  /**
+   * Format dataset values based on options
+   */
+  formatDatasetValues(values) {
+    if (!this.options.formatValues) return values;
+
+    return values.map(value => {
+      if (this.options.valueFormat === 'percentage') {
+        return typeof value === 'number' ? value : parseFloat(value);
+      }
+      if (this.options.valueFormat === 'currency') {
+        return typeof value === 'number' ? value : parseFloat(value);
+      }
+      return value;
+    });
+  }
+
+  /**
+   * Enhanced chart options with utility tooltips
+   */
+  getEnhancedChartOptions() {
     const baseOptions = {
       responsive: this.options.responsive,
       maintainAspectRatio: this.options.maintainAspectRatio,
@@ -111,319 +183,273 @@ class ChartsComponent {
           position: 'top',
           labels: {
             usePointStyle: true,
-            padding: 20
+            padding: 20,
+            generateLabels: (chart) => this.generateEnhancedLabels(chart)
           }
         },
         tooltip: {
+          enabled: this.options.showTooltips,
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
           titleColor: '#fff',
           bodyColor: '#fff',
           borderColor: '#666',
           borderWidth: 1,
           cornerRadius: 6,
-          displayColors: true
+          displayColors: true,
+          callbacks: {
+            label: (context) => this.formatTooltipLabel(context),
+            title: (context) => this.formatTooltipTitle(context)
+          }
         }
-      }
+      },
+      onClick: (event, elements) => this.handleChartClick(event, elements)
     };
 
-    // Type-specific options
-    switch (this.options.type) {
-      case 'line':
-      case 'bar':
-        return {
-          ...baseOptions,
-          scales: {
-            x: {
-              grid: {
-                display: false
-              },
-              ticks: {
-                color: '#666'
-              }
-            },
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: 'rgba(0, 0, 0, 0.1)'
-              },
-              ticks: {
-                color: '#666'
-              }
-            }
-          }
-        };
-        
-      case 'pie':
-      case 'doughnut':
-        return {
-          ...baseOptions,
-          plugins: {
-            ...baseOptions.plugins,
-            legend: {
-              position: 'bottom',
-              labels: {
-                usePointStyle: true,
-                padding: 20
-              }
-            }
-          }
-        };
-        
-      default:
-        return baseOptions;
-    }
+    return this.mergeChartOptions(baseOptions);
   }
 
   /**
-   * Get default color
-   * @param {number} index - Dataset index
-   * @param {string} type - Color type (background, border)
-   * @returns {string} Color
+   * Format tooltip labels using utility functions
    */
-  getDefaultColor(index, type = 'background') {
+  formatTooltipLabel(context) {
+    const label = context.dataset.label || '';
+    const value = context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+
+    if (this.options.valueFormat === 'percentage') {
+      return `${label}: ${formatPercentage(value)}`;
+    } else if (this.options.valueFormat === 'currency') {
+      return `${label}: ${formatCurrency(value)}`;
+    } else if (this.options.valueFormat === 'number') {
+      return `${label}: ${formatNumber(value)}`;
+    }
+
+    return `${label}: ${value}`;
+  }
+
+  /**
+   * Format tooltip title
+   */
+  formatTooltipTitle(context) {
+    const label = context[0].label;
+    if (this.options.type === 'pie' || this.options.type === 'doughnut') {
+      return `Category: ${label}`;
+    }
+    return label;
+  }
+
+  /**
+   * Enhanced color generation with utility functions
+   */
+  getEnhancedColor(index, type = 'background') {
+    // Use provided colors or generate with utilities
+    if (this.options.colorPalette && this.options.colorPalette[index]) {
+      return this.options.colorPalette[index][type] || this.options.colorPalette[index];
+    }
+
+    // Use utility random colors as fallback
     const colors = [
       { background: 'rgba(54, 162, 235, 0.2)', border: 'rgb(54, 162, 235)' },
       { background: 'rgba(255, 99, 132, 0.2)', border: 'rgb(255, 99, 132)' },
       { background: 'rgba(255, 205, 86, 0.2)', border: 'rgb(255, 205, 86)' },
       { background: 'rgba(75, 192, 192, 0.2)', border: 'rgb(75, 192, 192)' },
-      { background: 'rgba(153, 102, 255, 0.2)', border: 'rgb(153, 102, 255)' },
-      { background: 'rgba(255, 159, 64, 0.2)', border: 'rgb(255, 159, 64)' }
+      { background: randomColor('rgba').replace('rgb', 'rgba').replace(')', ', 0.2)'), border: randomColor('rgb') },
+      { background: randomColor('rgba').replace('rgb', 'rgba').replace(')', ', 0.2)'), border: randomColor('rgb') }
     ];
-    
+
     const color = colors[index % colors.length];
     return color[type];
   }
 
   /**
-   * Update chart data
-   * @param {Object} newData - New data
+   * Update stats display with formatted values
+   */
+  updateStatsDisplay() {
+    const statsContainer = document.getElementById(`${this.chartId}-stats`);
+    if (!statsContainer || !this.chart) return;
+
+    const stats = this.calculateStats();
+
+    statsContainer.innerHTML = `
+      <div class="stats-grid">
+        ${stats.map(stat => `
+          <div class="stat-item">
+            <div class="stat-label">${stat.label}</div>
+            <div class="stat-value ${stat.color ? `text-${stat.color}` : ''}">
+              ${stat.formattedValue}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  /**
+   * Calculate chart statistics
+   */
+  calculateStats() {
+    if (!this.chart || !this.chart.data.datasets.length) return [];
+
+    const datasets = this.chart.data.datasets;
+    const stats = [];
+
+    datasets.forEach((dataset, index) => {
+      const values = dataset.data.filter(val => typeof val === 'number');
+      if (values.length > 0) {
+        const sum = values.reduce((a, b) => a + b, 0);
+        const avg = sum / values.length;
+        const max = Math.max(...values);
+        const min = Math.min(...values);
+
+        stats.push(
+            {
+              label: `${dataset.label} Avg`,
+              value: avg,
+              formattedValue: this.formatValue(avg),
+              color: 'primary'
+            },
+            {
+              label: `${dataset.label} Max`,
+              value: max,
+              formattedValue: this.formatValue(max),
+              color: 'success'
+            }
+        );
+      }
+    });
+
+    return stats;
+  }
+
+  /**
+   * Format value based on options
+   */
+  formatValue(value) {
+    if (this.options.valueFormat === 'percentage') {
+      return formatPercentage(value);
+    } else if (this.options.valueFormat === 'currency') {
+      return formatCurrency(value);
+    } else if (this.options.valueFormat === 'number') {
+      return formatNumber(value, 2);
+    }
+    return formatNumber(value);
+  }
+
+  /**
+   * Enhanced update data with validation
    */
   updateData(newData) {
-    if (!this.chart) return;
-    
-    this.options.data = { ...this.options.data, ...newData };
-    this.chart.data = this.processData(this.options.data);
-    this.chart.update('active');
+    if (!this.chart) {
+      showToast('Chart not initialized', 'warning');
+      return;
+    }
+
+    try {
+      showLoading();
+      this.options.data = { ...this.options.data, ...newData };
+      this.chart.data = this.processData(this.options.data);
+      this.chart.update('active');
+      this.updateStatsDisplay();
+      showToast('Chart data updated', 'success');
+    } catch (error) {
+      console.error('Failed to update chart data:', error);
+      showToast('Failed to update chart data', 'error');
+    } finally {
+      hideLoading();
+    }
   }
 
   /**
-   * Update chart type
-   * @param {string} newType - New chart type
+   * Setup event listeners with debounced resize
    */
-  updateType(newType) {
-    if (!this.chart) return;
-    
-    this.options.type = newType;
-    this.chart.config.type = newType;
-    this.chart.update('active');
+  setupEventListeners() {
+    if (this.options.autoResize) {
+      this.resizeHandler = debounce(() => {
+        this.resize();
+      }, 250);
+
+      window.addEventListener('resize', this.resizeHandler);
+    }
   }
 
   /**
-   * Add dataset
-   * @param {Object} dataset - New dataset
+   * Toggle fullscreen mode
    */
-  addDataset(dataset) {
-    if (!this.chart) return;
-    
-    const processedDataset = {
-      label: dataset.label || `Dataset ${this.chart.data.datasets.length + 1}`,
-      data: dataset.data || [],
-      backgroundColor: dataset.backgroundColor || this.getDefaultColor(this.chart.data.datasets.length, 'background'),
-      borderColor: dataset.borderColor || this.getDefaultColor(this.chart.data.datasets.length, 'border'),
-      ...dataset
-    };
-    
-    this.chart.data.datasets.push(processedDataset);
-    this.chart.update('active');
+  toggleFullscreen() {
+    const chartContainer = document.getElementById(this.chartId);
+    if (!chartContainer) return;
+
+    if (!document.fullscreenElement) {
+      chartContainer.requestFullscreen().catch(err => {
+        showToast('Fullscreen not supported', 'warning');
+      });
+    } else {
+      document.exitFullscreen();
+    }
   }
 
   /**
-   * Remove dataset
-   * @param {number} index - Dataset index to remove
-   */
-  removeDataset(index) {
-    if (!this.chart) return;
-    
-    this.chart.data.datasets.splice(index, 1);
-    this.chart.update('active');
-  }
-
-  /**
-   * Update dataset
-   * @param {number} index - Dataset index
-   * @param {Object} updates - Dataset updates
-   */
-  updateDataset(index, updates) {
-    if (!this.chart) return;
-    
-    Object.assign(this.chart.data.datasets[index], updates);
-    this.chart.update('active');
-  }
-
-  /**
-   * Set chart options
-   * @param {Object} options - New options
-   */
-  setOptions(options) {
-    if (!this.chart) return;
-    
-    this.options.options = { ...this.options.options, ...options };
-    this.chart.options = this.getChartOptions();
-    this.chart.update('active');
-  }
-
-  /**
-   * Resize chart
-   */
-  resize() {
-    if (!this.chart) return;
-    
-    this.chart.resize();
-  }
-
-  /**
-   * Destroy chart
+   * Cleanup event listeners
    */
   destroy() {
+    if (this.resizeHandler) {
+      window.removeEventListener('resize', this.resizeHandler);
+    }
+
     if (this.chart) {
       this.chart.destroy();
       this.chart = null;
       this.isVisible = false;
     }
-    
+
     if (this.container) {
       this.container.innerHTML = '';
     }
-  }
 
-  /**
-   * Show chart
-   */
-  show() {
-    if (this.container) {
-      this.container.style.display = 'block';
-      this.isVisible = true;
-      
-      // Resize chart after showing
-      setTimeout(() => {
-        this.resize();
-      }, 100);
-    }
-  }
-
-  /**
-   * Hide chart
-   */
-  hide() {
-    if (this.container) {
-      this.container.style.display = 'none';
-      this.isVisible = false;
-    }
-  }
-
-  /**
-   * Export chart as image
-   * @param {string} format - Image format (png, jpg, svg)
-   * @param {Object} options - Export options
-   * @returns {string} Image data URL
-   */
-  exportAsImage(format = 'png', options = {}) {
-    if (!this.chart) return null;
-    
-    return this.chart.toBase64Image();
-  }
-
-  /**
-   * Get chart data as JSON
-   * @returns {Object} Chart data
-   */
-  getChartData() {
-    if (!this.chart) return null;
-    
-    return {
-      type: this.chart.config.type,
-      data: this.chart.data,
-      options: this.chart.options
-    };
+    showToast('Chart destroyed', 'info');
   }
 }
 
-// Utility functions for creating common chart types
-class ChartUtils {
+// Enhanced ChartUtils with utility integration
+export class ChartUtils {
   /**
-   * Create line chart
-   * @param {string} containerId - Container ID
-   * @param {Object} data - Chart data
-   * @param {Object} options - Chart options
-   * @returns {ChartsComponent} Chart instance
+   * Create performance chart with formatted data
    */
-  static createLineChart(containerId, data, options = {}) {
+  static createPerformanceChart(containerId, performanceData) {
+    const data = {
+      labels: performanceData.labels,
+      datasets: [{
+        label: 'Performance',
+        data: performanceData.values,
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        borderColor: 'rgb(54, 162, 235)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true
+      }]
+    };
+
     return new ChartsComponent(containerId, {
       type: 'line',
       data: data,
-      ...options
+      title: 'Performance Trend',
+      valueFormat: 'percentage',
+      formatValues: true
     });
   }
 
   /**
-   * Create bar chart
-   * @param {string} containerId - Container ID
-   * @param {Object} data - Chart data
-   * @param {Object} options - Chart options
-   * @returns {ChartsComponent} Chart instance
+   * Create grade distribution chart
    */
-  static createBarChart(containerId, data, options = {}) {
-    return new ChartsComponent(containerId, {
-      type: 'bar',
-      data: data,
-      ...options
-    });
-  }
-
-  /**
-   * Create pie chart
-   * @param {string} containerId - Container ID
-   * @param {Object} data - Chart data
-   * @param {Object} options - Chart options
-   * @returns {ChartsComponent} Chart instance
-   */
-  static createPieChart(containerId, data, options = {}) {
-    return new ChartsComponent(containerId, {
-      type: 'pie',
-      data: data,
-      ...options
-    });
-  }
-
-  /**
-   * Create doughnut chart
-   * @param {string} containerId - Container ID
-   * @param {Object} data - Chart data
-   * @param {Object} options - Chart options
-   * @returns {ChartsComponent} Chart instance
-   */
-  static createDoughnutChart(containerId, data, options = {}) {
-    return new ChartsComponent(containerId, {
-      type: 'doughnut',
-      data: data,
-      ...options
-    });
-  }
-
-  /**
-   * Create dashboard stats chart
-   * @param {string} containerId - Container ID
-   * @param {Array} stats - Stats data
-   * @returns {ChartsComponent} Chart instance
-   */
-  static createStatsChart(containerId, stats) {
+  static createGradeDistributionChart(containerId, gradeData) {
     const data = {
-      labels: stats.map(stat => stat.label),
+      labels: gradeData.ranges,
       datasets: [{
-        label: 'Statistics',
-        data: stats.map(stat => stat.value),
-        backgroundColor: stats.map((_, index) => this.getDefaultColor(index, 'background')),
-        borderColor: stats.map((_, index) => this.getDefaultColor(index, 'border')),
+        label: 'Number of Students',
+        data: gradeData.counts,
+        backgroundColor: gradeData.ranges.map((_, index) =>
+            randomColor('rgba').replace('rgb', 'rgba').replace(')', ', 0.7)')
+        ),
+        borderColor: gradeData.ranges.map(() => randomColor('rgb')),
         borderWidth: 2
       }]
     };
@@ -431,85 +457,12 @@ class ChartUtils {
     return new ChartsComponent(containerId, {
       type: 'bar',
       data: data,
-      options: {
-        plugins: {
-          legend: {
-            display: false
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true
-          }
-        }
-      }
+      title: 'Grade Distribution',
+      valueFormat: 'number'
     });
-  }
-
-  /**
-   * Create trend chart
-   * @param {string} containerId - Container ID
-   * @param {Array} trends - Trend data
-   * @returns {ChartsComponent} Chart instance
-   */
-  static createTrendChart(containerId, trends) {
-    const data = {
-      labels: trends.labels,
-      datasets: trends.datasets.map((dataset, index) => ({
-        label: dataset.label,
-        data: dataset.data,
-        backgroundColor: this.getDefaultColor(index, 'background'),
-        borderColor: this.getDefaultColor(index, 'border'),
-        borderWidth: 2,
-        fill: false,
-        tension: 0.4
-      }))
-    };
-
-    return new ChartsComponent(containerId, {
-      type: 'line',
-      data: data,
-      options: {
-        plugins: {
-          legend: {
-            position: 'top'
-          }
-        },
-        scales: {
-          x: {
-            grid: {
-              display: false
-            }
-          },
-          y: {
-            beginAtZero: true
-          }
-        }
-      }
-    });
-  }
-
-  /**
-   * Get default color
-   * @param {number} index - Color index
-   * @param {string} type - Color type
-   * @returns {string} Color
-   */
-  static getDefaultColor(index, type = 'background') {
-    const colors = [
-      { background: 'rgba(54, 162, 235, 0.2)', border: 'rgb(54, 162, 235)' },
-      { background: 'rgba(255, 99, 132, 0.2)', border: 'rgb(255, 99, 132)' },
-      { background: 'rgba(255, 205, 86, 0.2)', border: 'rgb(255, 205, 86)' },
-      { background: 'rgba(75, 192, 192, 0.2)', border: 'rgb(75, 192, 192)' },
-      { background: 'rgba(153, 102, 255, 0.2)', border: 'rgb(153, 102, 255)' },
-      { background: 'rgba(255, 159, 64, 0.2)', border: 'rgb(255, 159, 64)' }
-    ];
-    
-    const color = colors[index % colors.length];
-    return color[type];
   }
 }
 
-// Export for use in other files
+// Export with utility integration
 window.ChartsComponent = ChartsComponent;
 window.ChartUtils = ChartUtils;

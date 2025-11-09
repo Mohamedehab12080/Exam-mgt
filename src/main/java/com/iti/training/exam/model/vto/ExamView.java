@@ -14,9 +14,12 @@ import java.util.List;
 @AllArgsConstructor
 public class ExamView {
     private Integer examId;
+    private Integer courseId;
     private String title;
     private LocalDate examDate;
     private Integer duration;
     private String courseName;
+    private Integer numMcq;
+    private Integer numTf;
     private List<QuestionView> questions;
 }

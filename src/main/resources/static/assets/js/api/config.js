@@ -1,5 +1,6 @@
 // API Configuration
-const API_CONFIG = {
+import './types.js'
+export const API_CONFIG = {
   BASE_URL: 'http://localhost:8080', // Update this to match your backend URL
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
@@ -174,7 +175,7 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 // Helper functions for different HTTP methods
-const api = {
+export const api = {
   get: (endpoint, params = {}, options = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
@@ -211,7 +212,7 @@ const api = {
 };
 
 // Utility function to handle API responses
-function handleAPIResponse(response, successMessage = 'Operation successful') {
+export function handleAPIResponse(response, successMessage = 'Operation successful') {
   if (response.data) {
     showToast(successMessage, 'success');
     return response.data;
@@ -221,7 +222,7 @@ function handleAPIResponse(response, successMessage = 'Operation successful') {
 }
 
 // Utility function to handle API errors
-function handleAPIError(error, customMessage = null) {
+export function handleAPIError(error, customMessage = null) {
   console.error('[API] Error:', error);
   
   let message = customMessage || 'An error occurred';
@@ -265,7 +266,7 @@ function handleAPIError(error, customMessage = null) {
 }
 
 // Simple toast notification function (will be enhanced later)
-function showToast(message, type = 'info') {
+export function showToast(message, type = 'info') {
   console.log(`[Toast] ${type.toUpperCase()}: ${message}`);
   
   // Create toast element

@@ -36,6 +36,12 @@ public class ExamView implements Serializable {
 
   private Integer examId;
 
+  private Integer courseId;
+
+  private Integer numMcq;
+
+  private Integer numTf;
+
   private String title;
 
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)

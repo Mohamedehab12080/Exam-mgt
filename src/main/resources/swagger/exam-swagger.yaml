@@ -170,6 +170,9 @@ components:
         duration:
           type: integer
           format: int32
+        examDate:
+          type: string
+          format: date
         numMcq:
           type: integer
           format: int32
@@ -196,6 +199,15 @@ components:
       type: object
       properties:
         examId:
+          type: integer
+          format: int32
+        courseId:
+          type: integer
+          format: int32
+        numMcq:
+          type: integer
+          format: int32
+        numTf:
           type: integer
           format: int32
         title:
@@ -251,6 +263,9 @@ components:
         timestamp:
           type: string
           format: date-time
+        status:
+          type: integer
+          format: int32
 
     ExamSortBy:
       type: string
