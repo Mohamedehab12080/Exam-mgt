@@ -525,7 +525,7 @@ class ExamManagementApp {
       <form id="studentForm" class="data-form">
         <div class="form-group">
           <label for="studentSSN">SSN</label>
-          <input type="text" id="studentSSN" class="form-control" required>
+          <input type="text" id="studentSSN" class="form-control" required inputmode="numeric" pattern="\\d{14}" maxlength="14" placeholder="12345678901234">
         </div>
         <div class="form-group">
           <label for="studentName">Full Name</label>
