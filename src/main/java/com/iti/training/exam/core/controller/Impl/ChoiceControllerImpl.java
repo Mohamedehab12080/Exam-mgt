@@ -7,6 +7,8 @@ import com.iti.training.exam.core.controller.config.ApiResponse;
 import com.iti.training.exam.core.controller.generated.choice.ChoicesController;
 import com.iti.training.exam.model.dto.ChoiceDTO;
 import com.iti.training.exam.model.filter.ChoiceSearchFilter;
+import com.iti.training.exam.model.generated.choice.ChoiceSortBy;
+import com.iti.training.exam.model.generated.choice.OrderDir;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,17 +43,10 @@ public class ChoiceControllerImpl implements ChoicesController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @Override
-    public ResponseEntity<ApiResponse> _getChoices(Integer questionId, String choiceText, Boolean isCorrect, Integer page, Integer size, String sort) {
 
-        SortingInfo sorting = null;
-        if (sort != null) {
-            String[] sortParts = sort.split(",");
-            sorting = SortingInfo.builder()
-                    .by(sortParts[0])
-                    .dir(sortParts.length > 1 ? sortParts[1] : "ASC")
-                    .build();
-        }
+    @Override
+    public ResponseEntity<ApiResponse> _getChoices(Integer questionId, String choiceText, Boolean isCorrect, Integer page, Integer size, ChoiceSortBy sortBy, OrderDir sortDir) {
+
         ChoiceSearchFilter filter = ChoiceSearchFilter.builder()
                 .questionId(questionId)
                 .choiceText(choiceText)
@@ -60,7 +55,10 @@ public class ChoiceControllerImpl implements ChoicesController {
                         .pageNum(page)
                         .pageSize(size)
                         .build())
-                .sorting(sorting)
+                .sorting(SortingInfo.builder()
+                        .by(sortBy.getValue())
+                        .dir(sortDir.getValue())
+                        .build())
                 .build();
 
         ApiResponse response = choiceService.getAllByFilters(filter);

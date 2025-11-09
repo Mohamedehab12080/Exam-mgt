@@ -8,6 +8,8 @@ import com.iti.training.exam.core.controller.generated.exam.ExamsController;
 import com.iti.training.exam.model.dto.ExamDTO;
 import com.iti.training.exam.model.dto.ExamSubmissionDTO;
 import com.iti.training.exam.model.filter.ExamSearchFilter;
+import com.iti.training.exam.model.generated.exam.ExamSortBy;
+import com.iti.training.exam.model.generated.exam.OrderDir;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,16 +40,17 @@ public class ExamControllerImpl implements ExamsController {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> _getExams(String title, Integer courseId, LocalDate examDate, LocalDate startDate, LocalDate endDate, Integer duration, Integer minDuration, Integer maxDuration, Integer page, Integer size, String sort) {
+    public ResponseEntity<ApiResponse> _getExams(String title, Integer courseId, LocalDate examDate, LocalDate startDate, LocalDate endDate, Integer duration, Integer minDuration, Integer maxDuration, Integer page, Integer size, ExamSortBy sortBy, OrderDir sortDir) {
 
-        SortingInfo sorting = null;
-        if (sort != null) {
-            String[] sortParts = sort.split(",");
-            sorting = SortingInfo.builder()
-                    .by(sortParts[0])
-                    .dir(sortParts.length > 1 ? sortParts[1] : "ASC")
+        // Fix: Handle null sorting parameters
+        SortingInfo sortingInfo = null;
+        if (sortBy != null) {
+            sortingInfo = SortingInfo.builder()
+                    .by(sortBy.getValue())
+                    .dir(sortDir != null ? sortDir.getValue() : "ASC")
                     .build();
         }
+
         ExamSearchFilter filter = ExamSearchFilter.builder()
                 .title(title)
                 .courseId(courseId)
@@ -57,8 +60,11 @@ public class ExamControllerImpl implements ExamsController {
                 .duration(duration)
                 .minDuration(minDuration)
                 .maxDuration(maxDuration)
-                .sorting(sorting)
-                .pagination(PaginationInfo.builder().pageSize(size).pageNum(page).build())
+                .sorting(sortingInfo) // This can be null now
+                .pagination(PaginationInfo.builder()
+                        .pageSize(size != null ? size : 25)
+                        .pageNum(page != null ? page : 0)
+                        .build())
                 .build();
 
         ApiResponse response = examService.getAllByFilters(filter);

@@ -25,9 +25,11 @@ public class Course {
     @Column(name = "Duration", nullable = false)
     private Integer duration;
 
+    @Builder.Default
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private List<Question> questions = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private List<Exam> exams = new ArrayList<>();
 }

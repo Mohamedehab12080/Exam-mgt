@@ -4,8 +4,10 @@ import com.iti.training.api.repository.model.PaginationInfo;
 import com.iti.training.api.repository.model.SortingInfo;
 import com.iti.training.exam.core.controller.config.ApiResponse;
 import com.iti.training.exam.core.controller.generated.student.StudentsController;
+import com.iti.training.exam.model.generated.student.OrderDir;
 import com.iti.training.exam.model.generated.student.StudentDTO;
 import com.iti.training.exam.model.dto.response.StudentResponse;
+import com.iti.training.exam.model.generated.student.StudentSortBy;
 import com.iti.training.exam.model.vto.StudentProgressView;
 import com.iti.training.exam.model.vto.StudentExamHistoryView;
 import com.iti.training.exam.model.vto.StudentView;
@@ -51,17 +53,24 @@ public class StudentControllerImpl implements StudentsController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
+
+
     @Override
-    public ResponseEntity<ApiResponse> _getAllByFilters(String firstName, String lastName,
-                                                        String email, String city,
-                                                        Integer graduationYear, String gender,
-                                                        Integer minAge, Integer maxAge,
-                                                        Integer pageNum, Integer pageSize,
-                                                        Boolean noPagination, String sortBy,
-                                                        String sortDir) {
+    public ResponseEntity<ApiResponse> _getAllByFilters(String firstName, String lastName, String email, String city, Integer graduationYear, String gender, Integer minAge, Integer maxAge, Integer pageNum, Integer pageSize, Boolean noPagination, StudentSortBy sortBy, OrderDir sortDir) {
+        // Fix: Handle null sortBy
+        String sortByValue = null;
+        String sortDirValue = null;
+
+        if (sortBy != null) {
+            sortByValue = sortBy.getValue();
+        }
+        if (sortDir != null) {
+            sortDirValue = sortDir.getValue();
+        }
+
         StudentSearchFilter filter = buildSearchFilter(firstName, lastName, email, city, graduationYear,
                 gender, minAge, maxAge, pageNum, pageSize, noPagination,
-                sortBy, sortDir);
+                sortByValue, sortDirValue);
         ApiResponse<List<StudentView>> response = studentService.getAllByFilters(filter);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
@@ -109,9 +118,6 @@ public class StudentControllerImpl implements StudentsController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    /**
-     * Build StudentSearchFilter from query parameters
-     */
     private StudentSearchFilter buildSearchFilter(String firstName, String lastName, String email,
                                                   String city, Integer graduationYear, String gender,
                                                   Integer minAge, Integer maxAge, Integer pageNum,
@@ -128,7 +134,7 @@ public class StudentControllerImpl implements StudentsController {
         }
 
         SortingInfo sorting = null;
-        if (sortBy != null) {
+        if (sortBy != null) { // Only build sorting if sortBy is provided
             sorting = SortingInfo.builder()
                     .by(sortBy)
                     .dir(sortDir != null ? sortDir : "ASC")
@@ -145,7 +151,7 @@ public class StudentControllerImpl implements StudentsController {
                 .minAge(minAge)
                 .maxAge(maxAge)
                 .pagination(pagination)
-                .sorting(sorting)
+                .sorting(sorting) // This can be null
                 .build();
     }
 }

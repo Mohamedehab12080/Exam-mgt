@@ -6,6 +6,8 @@ import com.iti.training.exam.core.controller.generated.attempt.AttemptsControlle
 import com.iti.training.exam.model.filter.AttemptSearchFilter;
 import com.iti.training.api.repository.model.PaginationInfo;
 import com.iti.training.api.repository.model.SortingInfo;
+import com.iti.training.exam.model.generated.attempt.AttemptOrderBy;
+import com.iti.training.exam.model.generated.attempt.OrderDir;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +24,7 @@ public class AttemptControllerImpl implements AttemptsController {
     public ResponseEntity<ApiResponse> _countAttempts(String studentSsn, Integer examId) {
         AttemptSearchFilter filter = AttemptSearchFilter.builder()
                 .studentSsn(studentSsn)
-                .examId(examId != null ? examId.intValue() : null)
+                .examId(examId)
                 .pagination(PaginationInfo.noPagination())
                 .build();
         ApiResponse response = attemptService.countByFilters(filter);
@@ -36,33 +38,29 @@ public class AttemptControllerImpl implements AttemptsController {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> _getAttempts(String studentSsn, Integer examId, LocalDate attemptDate, Integer page, Integer size, String sort) {
-        PaginationInfo pagination = null;
-        if (page != null || size != null) {
-            pagination = PaginationInfo.builder()
-                    .pageNum(page != null ? page : 0)
-                    .pageSize(size != null ? size : 25)
-                    .build();
-        }
+    public ResponseEntity<ApiResponse> _getAttempts(String studentSsn, Integer examId, LocalDate attemptDate, Integer page, Integer size, AttemptOrderBy sortBy, OrderDir sortDir) {
 
-        SortingInfo sorting = null;
-        if (sort != null) {
-            String[] sortParts = sort.split(",");
-            sorting = SortingInfo.builder()
-                    .by(sortParts[0])
-                    .dir(sortParts.length > 1 ? sortParts[1] : "ASC")
+        // Fix: Handle null sorting parameters
+        SortingInfo sortingInfo = null;
+        if (sortBy != null) {
+            sortingInfo = SortingInfo.builder()
+                    .by(sortBy.getValue())
+                    .dir(sortDir != null ? sortDir.getValue() : "ASC")
                     .build();
         }
 
         AttemptSearchFilter filter = AttemptSearchFilter.builder()
                 .studentSsn(studentSsn)
-                .examId(examId != null ? examId.intValue() : null)
+                .examId(examId)
                 .attemptDate(attemptDate)
-                .pagination(pagination)
-                .sorting(sorting)
+                .pagination(PaginationInfo.builder()
+                        .pageNum(page != null ? page : 0)
+                        .pageSize(size != null ? size : 25)
+                        .build())
+                .sorting(sortingInfo) // This can be null now
                 .build();
-
         ApiResponse response = attemptService.getAllByFilters(filter);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
+
 }

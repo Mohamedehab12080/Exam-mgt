@@ -7,8 +7,10 @@ package com.iti.training.exam.core.controller.generated.exam;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import com.iti.training.exam.model.dto.ExamDTO;
+import com.iti.training.exam.model.generated.exam.ExamSortBy;
 import com.iti.training.exam.model.dto.ExamSubmissionDTO;
 import java.time.LocalDate;
+import com.iti.training.exam.model.generated.exam.OrderDir;
 import io.swagger.v3.oas.annotations.ExternalDocumentation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -125,7 +127,8 @@ public interface ExamsController {
      * @param maxDuration  (optional)
      * @param page Pagination Page Number (optional, default to 0)
      * @param size Pagination Page Size (optional, default to 20)
-     * @param sort Sort criteria (optional)
+     * @param sortBy Sort by field (examId, title, courseId, examDate, duration) (optional)
+     * @param sortDir Sort direction (optional, default to ASC)
      * @return Exams retrieved successfully (status code 200)
      *         or Internal server error (status code 500)
      */
@@ -158,7 +161,8 @@ public interface ExamsController {
         @Parameter(name = "maxDuration", description = "", in = ParameterIn.QUERY) @Valid @RequestParam(value = "maxDuration", required = false) Integer maxDuration,
         @Parameter(name = "page", description = "Pagination Page Number", in = ParameterIn.QUERY) @Valid @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
         @Min(1) @Max(100) @Parameter(name = "size", description = "Pagination Page Size", in = ParameterIn.QUERY) @Valid @RequestParam(value = "size", required = false, defaultValue = "20") Integer size,
-        @Parameter(name = "sort", description = "Sort criteria", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sort", required = false) String sort
+        @Parameter(name = "sortBy", description = "Sort by field (examId, title, courseId, examDate, duration)", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sortBy", required = false) ExamSortBy sortBy,
+        @Parameter(name = "sortDir", description = "Sort direction", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sortDir", required = false, defaultValue = "ASC") OrderDir sortDir
     );
 
 

@@ -47,7 +47,8 @@ paths:
         - $ref: '#/components/parameters/QPMinChoiceCount'
         - $ref: '#/components/parameters/QPPageNum'
         - $ref: '#/components/parameters/QPPageSize'
-        - $ref: '#/components/parameters/QPSort'
+        - $ref: '#/components/parameters/QPSortBy'
+        - $ref: '#/components/parameters/QPSortDir'
       responses:
         '200':
           description: Questions retrieved successfully
@@ -184,6 +185,15 @@ components:
           type: string
           format: date-time
 
+    QuestionSortBy:
+      type: string
+      enum: [ questionId, courseId, type, questionText ]
+
+    OrderDir:
+      type: string
+      enum: [ ASC, DESC ]
+      default: ASC
+
   parameters:
     PPQuestionId:
       name: questionId
@@ -253,10 +263,18 @@ components:
         minimum: 1
         maximum: 100
 
-    QPSort:
-      name: sort
+    QPSortBy:
+      name: sortBy
       in: query
-      description: Sort criteria
+      description: Sort by field (questionId, courseId, type, questionText)
       required: false
       schema:
-        type: string
+        $ref: '#/components/schemas/QuestionSortBy'
+
+    QPSortDir:
+      name: sortDir
+      in: query
+      description: Sort direction
+      required: false
+      schema:
+        $ref: '#/components/schemas/OrderDir'

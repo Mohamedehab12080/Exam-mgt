@@ -100,4 +100,5 @@ public class ExamQueryBuilder extends AbstractQueryBuilder<Exam, ExamSearchFilte
                 "courseName", "course.courseName"
         );
     }
+    
 }

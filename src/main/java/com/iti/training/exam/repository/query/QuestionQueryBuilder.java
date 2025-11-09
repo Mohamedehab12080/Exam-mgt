@@ -80,7 +80,7 @@ public class QuestionQueryBuilder extends AbstractQueryBuilder<Question, Questio
         return Map.of(
                 "type", "item.type",
                 "question", "item.question",
-                "courseName", "course.courseName",
+                "courseName", "item.course.courseName",
                 "choiceCount", "SIZE(item.choices)"
         );
     }

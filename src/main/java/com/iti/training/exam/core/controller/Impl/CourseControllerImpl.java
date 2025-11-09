@@ -7,6 +7,8 @@ import com.iti.training.exam.core.controller.config.ApiResponse;
 import com.iti.training.exam.core.controller.generated.course.CoursesController;
 import com.iti.training.exam.model.dto.CourseDTO;
 import com.iti.training.exam.model.filter.CourseSearchFilter;
+import com.iti.training.exam.model.generated.course.CourseSortBy;
+import com.iti.training.exam.model.generated.course.OrderDir;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,16 +49,8 @@ public class CourseControllerImpl implements CoursesController {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> _getCourses(String courseName, Integer duration, Integer minDuration, Integer maxDuration, Boolean hasExams, Boolean hasQuestions, Integer page, Integer size, String sort) {
+    public ResponseEntity<ApiResponse> _getCourses(String courseName, Integer duration, Integer minDuration, Integer maxDuration, Boolean hasExams, Boolean hasQuestions, Integer page, Integer size, CourseSortBy sortBy, OrderDir sortDir) {
 
-        SortingInfo sorting = null;
-        if (sort != null) {
-            String[] sortParts = sort.split(",");
-            sorting = SortingInfo.builder()
-                    .by(sortParts[0])
-                    .dir(sortParts.length > 1 ? sortParts[1] : "ASC")
-                    .build();
-        }
         CourseSearchFilter filter = CourseSearchFilter.builder()
                 .courseName(courseName)
                 .duration(duration)
@@ -64,7 +58,10 @@ public class CourseControllerImpl implements CoursesController {
                 .maxDuration(maxDuration)
                 .hasExams(hasExams)
                 .hasQuestions(hasQuestions)
-                .sorting(sorting)
+                .sorting(SortingInfo.builder()
+                        .by(sortBy.getValue())
+                        .dir(sortDir.getValue())
+                        .build())
                 .pagination(PaginationInfo.builder().pageSize(size).pageNum(page).build())
                 .build();
 

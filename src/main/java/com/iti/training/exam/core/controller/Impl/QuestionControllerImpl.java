@@ -7,6 +7,8 @@ import com.iti.training.exam.core.controller.config.ApiResponse;
 import com.iti.training.exam.core.controller.generated.question.QuestionsController;
 import com.iti.training.exam.model.dto.QuestionDTO;
 import com.iti.training.exam.model.filter.QuestionSearchFilter;
+import com.iti.training.exam.model.generated.question.OrderDir;
+import com.iti.training.exam.model.generated.question.QuestionSortBy;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,24 +48,21 @@ public class QuestionControllerImpl implements QuestionsController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @Override
-    public ResponseEntity<ApiResponse> _getQuestions(Integer courseId, String type, String questionText, Boolean hasChoices, Integer minChoiceCount, Integer page, Integer size, String sort) {
 
-        SortingInfo sorting = null;
-        if (sort != null) {
-            String[] sortParts = sort.split(",");
-            sorting = SortingInfo.builder()
-                    .by(sortParts[0])
-                    .dir(sortParts.length > 1 ? sortParts[1] : "ASC")
-                    .build();
-        }
+
+    @Override
+    public ResponseEntity<ApiResponse> _getQuestions(Integer courseId, String type, String questionText, Boolean hasChoices, Integer minChoiceCount, Integer page, Integer size, QuestionSortBy sortBy, OrderDir sortDir) {
+
         QuestionSearchFilter filter = QuestionSearchFilter.builder()
                 .courseId(courseId)
                 .type(type)
                 .questionText(questionText)
                 .hasChoices(hasChoices)
                 .minChoiceCount(minChoiceCount)
-                .sorting(sorting)
+                .sorting(SortingInfo.builder()
+                        .by(sortBy.getValue())
+                        .dir(sortDir.getValue())
+                        .build())
                 .pagination(PaginationInfo.builder().pageSize(size).pageNum(page).build())
                 .build();
 

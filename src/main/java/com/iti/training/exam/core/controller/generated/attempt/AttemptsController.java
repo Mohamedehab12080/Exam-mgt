@@ -5,8 +5,10 @@
  */
 package com.iti.training.exam.core.controller.generated.attempt;
 
+import com.iti.training.exam.model.generated.attempt.AttemptOrderBy;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
+import com.iti.training.exam.model.generated.attempt.OrderDir;
 import io.swagger.v3.oas.annotations.ExternalDocumentation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -115,7 +117,8 @@ public interface AttemptsController {
      * @param attemptDate  (optional)
      * @param page Pagination Page Number (optional, default to 0)
      * @param size Pagination Page Size (optional, default to 20)
-     * @param sort Sort criteria (optional)
+     * @param sortBy Sort by field (attemptId, studentSsn, studentName, examId, examTitle, attemptDate, grade) (optional)
+     * @param sortDir Sort direction (optional, default to ASC)
      * @return Attempts retrieved successfully (status code 200)
      *         or Internal server error (status code 500)
      */
@@ -143,7 +146,8 @@ public interface AttemptsController {
         @Parameter(name = "attemptDate", description = "", in = ParameterIn.QUERY) @Valid @RequestParam(value = "attemptDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate attemptDate,
         @Parameter(name = "page", description = "Pagination Page Number", in = ParameterIn.QUERY) @Valid @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
         @Min(1) @Max(100) @Parameter(name = "size", description = "Pagination Page Size", in = ParameterIn.QUERY) @Valid @RequestParam(value = "size", required = false, defaultValue = "20") Integer size,
-        @Parameter(name = "sort", description = "Sort criteria", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sort", required = false) String sort
+        @Parameter(name = "sortBy", description = "Sort by field (attemptId, studentSsn, studentName, examId, examTitle, attemptDate, grade)", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sortBy", required = false) AttemptOrderBy sortBy,
+        @Parameter(name = "sortDir", description = "Sort direction", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sortDir", required = false, defaultValue = "ASC") OrderDir sortDir
     );
 
 }

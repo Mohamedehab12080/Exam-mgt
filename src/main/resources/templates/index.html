@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Management System</title>
+    
+    <!-- CSS Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="/assets/css/styles.css" rel="stylesheet">
+    <link href="/assets/css/components.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Exam Training</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-nav">
+                <a href="#" class="nav-link active" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-link" data-section="students">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Students</span>
+                </a>
+                <a href="#" class="nav-link" data-section="courses">
+                    <i class="fas fa-book"></i>
+                    <span>Courses</span>
+                </a>
+                <a href="#" class="nav-link" data-section="exams">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Exams</span>
+                </a>
+                <a href="#" class="nav-link" data-section="questions">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Questions</span>
+                </a>
+                <a href="#" class="nav-link" data-section="attempts">
+                    <i class="fas fa-clock"></i>
+                    <span>Attempts</span>
+                </a>
+                <a href="#" class="nav-link" data-section="choices">
+                    <i class="fas fa-list"></i>
+                    <span>Choices</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1 id="sectionTitle">Dashboard</h1>
+                    <div class="breadcrumb" id="breadcrumb">
+                        <span>Home</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search..." id="globalSearch">
+                    </div>
+                    <div class="status-indicator" id="apiStatus">
+                        <span class="status-dot"></span>
+                        <span>API Status</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="content-area" id="contentArea">
+                <!-- Dashboard Section -->
+                <section class="section active" id="dashboard">
+                    <div class="dashboard-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon students">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Students</h3>
+                                <p class="stat-number" id="totalStudents">0</p>
+                                <span class="stat-change positive">+12% this month</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon courses">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Active Courses</h3>
+                                <p class="stat-number" id="totalCourses">0</p>
+                                <span class="stat-change positive">+5 this week</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon exams">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Exams</h3>
+                                <p class="stat-number" id="totalExams">0</p>
+                                <span class="stat-change neutral">No change</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon attempts">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Exam Attempts</h3>
+                                <p class="stat-number" id="totalAttempts">0</p>
+                                <span class="stat-change positive">+23% this week</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-charts">
+                        <div class="chart-container">
+                            <h3>Recent Activity</h3>
+                            <div class="activity-list" id="recentActivity">
+                                <!-- Activity items will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h3>API Health Status</h3>
+                            <div class="api-health-grid" id="apiHealth">
+                                <!-- API health indicators will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Students Section -->
+                <section class="section" id="students">
+                    <div class="section-header">
+                        <h2>Student Management</h2>
+                        <button class="btn btn-primary" id="addStudentBtn">
+                            <i class="fas fa-plus"></i>
+                            Add Student
+                        </button>
+                    </div>
+                    
+                    <div class="filters-bar">
+                        <div class="filter-group">
+                            <input type="text" placeholder="Search by name..." id="studentSearch">
+                            <select id="studentGenderFilter">
+                                <option value="">All Genders</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                            <input type="number" placeholder="Min Age" id="studentMinAge">
+                            <input type="number" placeholder="Max Age" id="studentMaxAge">
+                        </div>
+                        <button class="btn btn-secondary" id="applyStudentFilters">
+                            <i class="fas fa-filter"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+
+                    <div class="data-table-container">
+                        <table class="data-table" id="studentsTable">
+                            <thead>
+                                <tr>
+                                    <th>SSN</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Age</th>
+                                    <th>Gender</th>
+                                    <th>City</th>
+                                    <th>Graduation Year</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody">
+                                <!-- Student data will be populated here -->
+                            </tbody>
+                        </table>
+                        <div class="pagination" id="studentsPagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Courses Section -->
+                <section class="section" id="courses">
+                    <div class="section-header">
+                        <h2>Course Management</h2>
+                        <button class="btn btn-primary" id="addCourseBtn">
+                            <i class="fas fa-plus"></i>
+                            Add Course
+                        </button>
+                    </div>
+                    
+                    <div class="filters-bar">
+                        <div class="filter-group">
+                            <input type="text" placeholder="Search by name..." id="courseSearch">
+                            <input type="number" placeholder="Min Duration" id="courseMinDuration">
+                            <input type="number" placeholder="Max Duration" id="courseMaxDuration">
+                        </div>
+                        <button class="btn btn-secondary" id="applyCourseFilters">
+                            <i class="fas fa-filter"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+
+                    <div class="data-table-container">
+                        <table class="data-table" id="coursesTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Course Name</th>
+                                    <th>Duration (hours)</th>
+                                    <th>Has Exams</th>
+                                    <th>Has Questions</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coursesTableBody">
+                                <!-- Course data will be populated here -->
+                            </tbody>
+                        </table>
+                        <div class="pagination" id="coursesPagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Exams Section -->
+                <section class="section" id="exams">
+                    <div class="section-header">
+                        <h2>Exam Management</h2>
+                        <button class="btn btn-primary" id="addExamBtn">
+                            <i class="fas fa-plus"></i>
+                            Create Exam
+                        </button>
+                    </div>
+                    
+                    <div class="filters-bar">
+                        <div class="filter-group">
+                            <input type="text" placeholder="Search by title..." id="examSearch">
+                            <select id="examCourseFilter">
+                                <option value="">All Courses</option>
+                            </select>
+                            <input type="date" id="examDateFilter">
+                        </div>
+                        <button class="btn btn-secondary" id="applyExamFilters">
+                            <i class="fas fa-filter"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+
+                    <div class="data-table-container">
+                        <table class="data-table" id="examsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Course</th>
+                                    <th>Duration</th>
+                                    <th>MCQ Count</th>
+                                    <th>TF Count</th>
+                                    <th>Exam Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="examsTableBody">
+                                <!-- Exam data will be populated here -->
+                            </tbody>
+                        </table>
+                        <div class="pagination" id="examsPagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Questions Section -->
+                <section class="section" id="questions">
+                    <div class="section-header">
+                        <h2>Question Management</h2>
+                        <button class="btn btn-primary" id="addQuestionBtn">
+                            <i class="fas fa-plus"></i>
+                            Add Question
+                        </button>
+                    </div>
+                    
+                    <div class="filters-bar">
+                        <div class="filter-group">
+                            <input type="text" placeholder="Search by text..." id="questionSearch">
+                            <select id="questionTypeFilter">
+                                <option value="">All Types</option>
+                                <option value="MCQ">MCQ</option>
+                                <option value="T/F">True/False</option>
+                            </select>
+                            <select id="questionCourseFilter">
+                                <option value="">All Courses</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" id="applyQuestionFilters">
+                            <i class="fas fa-filter"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+
+                    <div class="data-table-container">
+                        <table class="data-table" id="questionsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Question Text</th>
+                                    <th>Type</th>
+                                    <th>Course</th>
+                                    <th>Choices</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="questionsTableBody">
+                                <!-- Question data will be populated here -->
+                            </tbody>
+                        </table>
+                        <div class="pagination" id="questionsPagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Attempts Section -->
+                <section class="section" id="attempts">
+                    <div class="section-header">
+                        <h2>Exam Attempts</h2>
+                    </div>
+                    
+                    <div class="filters-bar">
+                        <div class="filter-group">
+                            <input type="text" placeholder="Student SSN..." id="attemptStudentSearch">
+                            <input type="number" placeholder="Exam ID..." id="attemptExamSearch">
+                            <input type="date" id="attemptDateFilter">
+                        </div>
+                        <button class="btn btn-secondary" id="applyAttemptFilters">
+                            <i class="fas fa-filter"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+
+                    <div class="data-table-container">
+                        <table class="data-table" id="attemptsTable">
+                            <thead>
+                                <tr>
+                                    <th>Attempt ID</th>
+                                    <th>Student Name</th>
+                                    <th>Student SSN</th>
+                                    <th>Exam Title</th>
+                                    <th>Attempt Date</th>
+                                    <th>Grade</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attemptsTableBody">
+                                <!-- Attempt data will be populated here -->
+                            </tbody>
+                        </table>
+                        <div class="pagination" id="attemptsPagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Choices Section -->
+                <section class="section" id="choices">
+                    <div class="section-header">
+                        <h2>Question Choices</h2>
+                        <button class="btn btn-primary" id="addChoiceBtn">
+                            <i class="fas fa-plus"></i>
+                            Add Choice
+                        </button>
+                    </div>
+                    
+                    <div class="filters-bar">
+                        <div class="filter-group">
+                            <input type="number" placeholder="Question ID..." id="choiceQuestionSearch">
+                            <input type="text" placeholder="Choice text..." id="choiceTextSearch">
+                            <select id="choiceCorrectFilter">
+                                <option value="">All</option>
+                                <option value="true">Correct</option>
+                                <option value="false">Incorrect</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" id="applyChoiceFilters">
+                            <i class="fas fa-filter"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+
+                    <div class="data-table-container">
+                        <table class="data-table" id="choicesTable">
+                            <thead>
+                                <tr>
+                                    <th>Choice ID</th>
+                                    <th>Question ID</th>
+                                    <th>Choice Text</th>
+                                    <th>Correct</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="choicesTableBody">
+                                <!-- Choice data will be populated here -->
+                            </tbody>
+                        </table>
+                        <div class="pagination" id="choicesPagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Forms -->
+    <div class="modal" id="formModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New Item</h3>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Form content will be dynamically inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modalCancel">Cancel</button>
+                <button class="btn btn-primary" id="modalSave">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/js/api/config.js"></script>
+    <script src="/assets/js/api/students.js"></script>
+    <script src="/assets/js/api/courses.js"></script>
+    <script src="/assets/js/api/exams.js"></script>
+    <script src="/assets/js/api/questions.js"></script>
+    <script src="/assets/js/api/attempts.js"></script>
+    <script src="/assets/js/api/choices.js"></script>
+    <script src="/assets/js/components/table.js"></script>
+    <script src="/assets/js/components/forms.js"></script>
+    <script src="/assets/js/components/modal.js"></script>
+    <script src="/assets/js/dashboard.js"></script>
+    <script src="/assets/js/app.js"></script>
+</body>
+</html>

@@ -88,10 +88,13 @@ public class AttemptQueryBuilder extends AbstractQueryBuilder<Attempt, AttemptSe
     @Override
     protected Map<String, String> getSortingMap() {
         return Map.of(
+                "attemptId", "item.attemptId",
+                "studentSsn", "student.ssn",
+                "studentName", "CONCAT(item.student.firstName, ' ', item.student.lastName)",
+                "examId", "item.exam.examId",
+                "examTitle", "item.exam.title",
                 "attemptDate", "item.attemptDate",
-                "grade", "item.grade",
-                "studentName", "CONCAT(student.firstName, ' ', student.lastName)",
-                "examTitle", "exam.title"
+                "grade", "item.grade"
         );
     }
 

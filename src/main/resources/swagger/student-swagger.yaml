@@ -381,6 +381,15 @@ components:
           type: integer
           format: int32
 
+    StudentSortBy:
+      type: string
+      enum: [ ssn, firstName, lastName, email, city, graduationYear, gender, birthdate, phone ]
+
+    OrderDir:
+      type: string
+      enum: [ ASC, DESC ]
+      default: ASC
+
   parameters:
     PPSsn:
       name: ssn
@@ -485,10 +494,10 @@ components:
     QPSortBy:
       name: sortBy
       in: query
-      description: Sort by field
+      description: Sort by field (ssn, firstName, lastName, email, city, graduationYear, gender, birthdate, phone)
       required: false
       schema:
-        type: string
+        $ref: '#/components/schemas/StudentSortBy'
 
     QPSortDir:
       name: sortDir
@@ -496,5 +505,4 @@ components:
       description: Sort direction
       required: false
       schema:
-        type: string
-        enum: [ASC, DESC]
+        $ref: '#/components/schemas/OrderDir'

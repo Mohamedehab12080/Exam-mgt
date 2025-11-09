@@ -5,7 +5,9 @@
  */
 package com.iti.training.exam.core.controller.generated.student;
 
+import com.iti.training.exam.model.generated.student.OrderDir;
 import com.iti.training.exam.model.generated.student.StudentDTO;
+import com.iti.training.exam.model.generated.student.StudentSortBy;
 import io.swagger.v3.oas.annotations.ExternalDocumentation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -199,8 +201,8 @@ public interface StudentsController {
      * @param pageNum Pagination Page Number (optional, default to 0)
      * @param pageSize Pagination Page Size (optional, default to 25)
      * @param noPagination If true, returns all results without pagination. Useful for dropdowns or exports.  (optional, default to false)
-     * @param sortBy Sort by field (optional)
-     * @param sortDir Sort direction (optional)
+     * @param sortBy Sort by field (ssn, firstName, lastName, email, city, graduationYear, gender, birthdate, phone) (optional)
+     * @param sortDir Sort direction (optional, default to ASC)
      * @return Students retrieved successfully (status code 200)
      *         or Internal server error (status code 500)
      */
@@ -234,8 +236,8 @@ public interface StudentsController {
         @Parameter(name = "pageNum", description = "Pagination Page Number", in = ParameterIn.QUERY) @Valid @RequestParam(value = "pageNum", required = false, defaultValue = "0") Integer pageNum,
         @Min(10) @Max(100) @Parameter(name = "pageSize", description = "Pagination Page Size", in = ParameterIn.QUERY) @Valid @RequestParam(value = "pageSize", required = false, defaultValue = "25") Integer pageSize,
         @Parameter(name = "noPagination", description = "If true, returns all results without pagination. Useful for dropdowns or exports. ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "noPagination", required = false, defaultValue = "false") Boolean noPagination,
-        @Parameter(name = "sortBy", description = "Sort by field", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sortBy", required = false) String sortBy,
-        @Parameter(name = "sortDir", description = "Sort direction", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sortDir", required = false) String sortDir
+        @Parameter(name = "sortBy", description = "Sort by field (ssn, firstName, lastName, email, city, graduationYear, gender, birthdate, phone)", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sortBy", required = false) StudentSortBy sortBy,
+        @Parameter(name = "sortDir", description = "Sort direction", in = ParameterIn.QUERY) @Valid @RequestParam(value = "sortDir", required = false, defaultValue = "ASC") OrderDir sortDir
     );
 
 

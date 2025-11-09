@@ -52,7 +52,8 @@ paths:
         - $ref: '#/components/parameters/QPMaxDuration'
         - $ref: '#/components/parameters/QPPageNum'
         - $ref: '#/components/parameters/QPPageSize'
-        - $ref: '#/components/parameters/QPSort'
+        - $ref: '#/components/parameters/QPSortBy'
+        - $ref: '#/components/parameters/QPSortDir'
       responses:
         '200':
           description: Exams retrieved successfully
@@ -251,6 +252,14 @@ components:
           type: string
           format: date-time
 
+    ExamSortBy:
+      type: string
+      enum: [ examId, title, courseId, examDate, duration ]
+
+    OrderDir:
+      type: string
+      enum: [ ASC, DESC ]
+      default: ASC
   parameters:
     QPTitle:
       name: title
@@ -337,10 +346,18 @@ components:
         minimum: 1
         maximum: 100
 
-    QPSort:
-      name: sort
+    QPSortBy:
+      name: sortBy
       in: query
-      description: Sort criteria
+      description: Sort by field (examId, title, courseId, examDate, duration)
       required: false
       schema:
-        type: string
+        $ref: '#/components/schemas/ExamSortBy'
+
+    QPSortDir:
+      name: sortDir
+      in: query
+      description: Sort direction
+      required: false
+      schema:
+        $ref: '#/components/schemas/OrderDir'

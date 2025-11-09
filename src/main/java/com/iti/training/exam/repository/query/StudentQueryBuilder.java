@@ -90,8 +90,14 @@ public class StudentQueryBuilder extends AbstractQueryBuilder<Student, StudentSe
     protected Map<String, String> getSortingMap() {
         return Map.of(
                 "ssn", "item.ssn",
+                "firstName", "item.firstName",
+                "lastName", "item.lastName",
+                "email", "item.email",
+                "city", "item.city",
                 "graduationYear", "item.graduationYear",
-                "age", "item.age"
+                "gender", "item.gender",
+                "birthdate", "item.birthdate",
+                "phone", "item.phone"
         );
     }
 
