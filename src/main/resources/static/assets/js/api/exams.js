@@ -1,7 +1,7 @@
 // Add at top:
-import { API_CONFIG } from './config.js';
-import { api, handleAPIResponse, handleAPIError } from './config.js';
-import './types.js'
+import { API_CONFIG } from '/config.js';
+import { api, handleAPIResponse, handleAPIError } from '/config.js';
+import '/types.js'
 class ExamsAPI {
   constructor() {
     this.endpoint = API_CONFIG.ENDPOINTS.EXAMS;

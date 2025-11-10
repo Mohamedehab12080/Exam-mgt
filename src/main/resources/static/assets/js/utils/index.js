@@ -1,20 +1,20 @@
 // Utilities Index - Export all utility functions as ES6 modules
 
 // Import all utilities
-import * as UI from './ui.js';
-import * as Formatters from './formatters.js';
-import * as Helpers from './helpers.js';
-import * as Validators from './validators.js';
-import * as Storage from './storage.js';
-import * as Network from './network.js';
+import * as UI from '/ui.js';
+import * as Formatters from '/formatters.js';
+import * as Helpers from '/helpers.js';
+import * as Validators from '/validators.js';
+import * as Storage from '/storage.js';
+import * as Network from '/network.js';
 
 // Export all utilities individually
-export * from './ui.js';
-export * from './formatters.js';
-export * from './helpers.js';
-export * from './validators.js';
-export * from './storage.js';
-export * from './network.js';
+export * from '/ui.js';
+export * from '/formatters.js';
+export * from '/helpers.js';
+export * from '/validators.js';
+export * from '/storage.js';
+export * from '/network.js';
 
 // Create global Utils object with all functions
 const Utils = {

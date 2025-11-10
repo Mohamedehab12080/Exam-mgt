@@ -1,59 +1,239 @@
-class ExamManagementApp {
+// Main Application Entry Point - Enhanced with Components & Utilities
+import DashboardComponent from '/dashboard.js';
+import { DataTableComponent } from '/static/assets/js/components/data-table.js';
+import { FormComponent } from '/static/assets/js/components/form.js';
+import { ModalComponent } from '/static/assets/js/components/modal.js';
 
+// Import utility functions
+import {
+  // Helper functions
+  safeArrayAccess,
+  isNonEmptyArray,
+  normalizeApiResponse,
+  extractPaginationInfo,
+  debounce,
+  throttle,
+  generateId,
+  deepClone,
+  deepMerge,
+  getNestedValue,
+  setNestedValue,
+  flattenObject,
+  groupBy,
+  sortBy,
+  filterBySearch,
+  paginate,
+  waitFor,
+  retry,
+  randomString,
+  randomNumber,
+  randomColor,
+  arrayToObject,
+  objectToArray,
+  removeDuplicates,
+  chunk,
+  getUrlParams,
+  buildUrl,
+
+  // Network functions
+  isOnline,
+  getConnectionInfo,
+  request,
+  jsonRequest,
+  get,
+  getJSON,
+  post,
+  postJSON,
+  put,
+  putJSON,
+  deleteRequest,
+  deleteJSON,
+  uploadFile,
+  downloadFile,
+  createWebSocket,
+  checkAPIHealth,
+  addRequestInterceptor,
+  addResponseInterceptor,
+
+  // UI functions
+  showToast,
+  hideToast,
+  showLoading,
+  hideLoading,
+  showConfirm,
+  showAlert,
+  showPrompt,
+  showBanner,
+  hideBanner,
+  showProgress,
+  hideProgress,
+  scrollToElement,
+  scrollToTop,
+  addClassWithAnimation,
+  toggleDarkMode,
+  initializeDarkMode,
+  getViewportDimensions,
+  isElementInViewport,
+  animateCounter,
+
+  // Storage functions
+  setLocalStorage,
+  getLocalStorage,
+  removeLocalStorage,
+  clearLocalStorage,
+  setSessionStorage,
+  getSessionStorage,
+  removeSessionStorage,
+  clearSessionStorage,
+  setCookie,
+  getCookie,
+  removeCookie,
+  getAllCookies,
+  setCache,
+  getCache,
+  removeCache,
+  clearCache,
+  setComplexStorage,
+  getComplexStorage,
+  isStorageAvailable,
+  getStorageQuota,
+  createStorageManager,
+
+  // Validation functions
+  isEmpty,
+  isNotEmpty,
+  isValidEmail,
+  isValidPhone,
+  isValidUrl,
+  isValidDate,
+  isValidNumber,
+  isValidLength,
+  isValidPattern,
+  isValidPassword,
+  isValidFile,
+  isValidArray,
+  validateObject,
+  sanitizeHtml,
+  escapeHtml,
+  stripHtml,
+  validateForm,
+  getValidationMessage,
+  isFormValid
+} from '/static/assets/js/utils/index.js';
+
+export class ExamManagementApp {
   constructor() {
     this.currentSection = 'dashboard';
     this.isLoading = false;
     this.currentFilters = {};
     this.currentPage = 1;
     this.pageSize = 10;
-    this.modalManager = new ModalManager();
-    this.loadingManager = new LoadingManager();
-    this.toastManager = new ToastManager();
+    this.autoRefreshInterval = null;
+    this.autoRefreshEnabled = false;
+    this.currentTimeRange = '7d';
+
+    // Initialize enhanced managers with components
+    this.modalManager = {
+      show: (config) => {
+        if (config.type === 'confirm') {
+          return ModalComponent.confirm(config.content, config);
+        } else if (config.type === 'prompt') {
+          return ModalComponent.prompt(config.content, config.defaultValue, config);
+        } else if (config.type === 'form') {
+          return ModalComponent.form(config.formConfig, config);
+        } else if (config.type === 'alert') {
+          return ModalComponent.alert(config.content, config);
+        } else {
+          // Custom modal
+          const modal = new ModalComponent(config);
+          return modal.show();
+        }
+      },
+      hide: () => {
+        // ModalComponent handles its own hiding
+      },
+      loading: (message) => {
+        return ModalComponent.loading(message);
+      }
+    };
+
+    // Enhanced loading manager
+    this.loadingManager = {
+      show: (message = 'Loading...', containerId = null) => showLoading(message, containerId),
+      hide: (containerId = null) => hideLoading(containerId)
+    };
+
+    // Enhanced toast manager
+    this.toastManager = {
+      show: (message, type = 'info', duration = 3000) => showToast(message, type, duration),
+      hide: () => hideToast()
+    };
+
+    // Dashboard component
+    this.dashboardComponent = null;
+
+    // Data table instances
+    this.tableInstances = new Map();
+
+    // Form instances
+    this.formInstances = new Map();
+
+    // Initialize dark mode
+    initializeDarkMode();
+
+    // Setup network monitoring
+    this.setupNetworkMonitoring();
 
     this.init();
   }
 
   /**
-   * Initialize the application
+   * Initialize the application with enhanced error handling
    */
   async init() {
     try {
       console.log('Initializing Exam Management App...');
+      showLoading('Initializing application...');
 
       // Wait for DOM to be ready
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => this.setupApp());
       } else {
-        this.setupApp();
+        await this.setupApp();
       }
+
+      hideLoading();
     } catch (error) {
       console.error('Failed to initialize app:', error);
-      this.showError('Failed to initialize application');
+      this.handleError(error, 'initialization');
+      hideLoading();
     }
   }
 
   /**
-   * Setup the application
+   * Setup the application with enhanced utilities
    */
-  setupApp() {
+  async setupApp() {
     try {
       this.setupEventListeners();
       this.setupNavigation();
-      this.loadDashboard();
+      await this.loadDashboard();
       this.startHealthCheck();
+      this.setupGlobalErrorHandling();
 
       console.log('Exam Management App initialized successfully');
+      this.showToast('Application loaded successfully', 'success');
     } catch (error) {
       console.error('Failed to setup app:', error);
-      this.showError('Failed to setup application');
+      this.handleError(error, 'setup');
     }
   }
 
   /**
-   * Setup event listeners
+   * Enhanced event listeners with utility integration
    */
   setupEventListeners() {
-    // Navigation - Fixed to match your HTML structure
+    // Navigation with enhanced event handling
     document.querySelectorAll('.nav-link').forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -64,24 +244,198 @@ class ExamManagementApp {
       });
     });
 
-    // Search functionality
+    // Enhanced search functionality with debounce
     const globalSearch = document.getElementById('globalSearch');
     if (globalSearch) {
-      globalSearch.addEventListener('input', this.debounce((e) => {
+      globalSearch.addEventListener('input', debounce((e) => {
         this.handleSearch(e.target.value);
       }, 300));
     }
 
-    // Filter buttons
-    document.querySelectorAll('.btn-secondary').forEach(btn => {
-      if (btn.id.includes('apply') && btn.id.includes('Filters')) {
-        btn.addEventListener('click', (e) => {
-          this.handleFilterApply(e.target);
-        });
+    // Filter buttons for all sections
+    this.setupFilterButtons();
+
+    // Add buttons with enhanced form handling
+    this.setupAddButtons();
+
+    // Modal functionality
+    this.setupModalEvents();
+
+    // Responsive sidebar toggle
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener('click', () => {
+        this.toggleSidebar();
+      });
+    }
+
+    // Enhanced keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      this.handleKeyboardShortcuts(e);
+    });
+
+    // Close modal on backdrop click
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal')) {
+        this.modalManager.hide();
       }
     });
 
-    // Add buttons
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener('click', () => {
+        this.toggleDarkMode();
+      });
+    }
+
+    // Section-specific event listeners
+    this.setupAttemptsEventListeners();
+    this.setupStudentsEventListeners();
+    this.setupCoursesEventListeners();
+    this.setupExamsEventListeners();
+    this.setupQuestionsEventListeners();
+    this.setupChoicesEventListeners();
+    this.setupDashboardEventListeners();
+
+    // Network status monitoring
+    window.addEventListener('online', () => this.handleOnlineStatus());
+    window.addEventListener('offline', () => this.handleOfflineStatus());
+  }
+
+  /**
+   * Setup network monitoring
+   */
+  setupNetworkMonitoring() {
+    // Check network status periodically
+    setInterval(() => {
+      this.updateNetworkStatus();
+    }, 30000);
+
+    // Initial network status check
+    this.updateNetworkStatus();
+  }
+
+  /**
+   * Handle online status
+   */
+  handleOnlineStatus() {
+    this.showToast('Connection restored', 'success');
+    this.updateNetworkStatus();
+
+    // Refresh data if auto-refresh is enabled
+    if (this.autoRefreshEnabled) {
+      this.refreshCurrentSection();
+    }
+  }
+
+  /**
+   * Handle offline status
+   */
+  handleOfflineStatus() {
+    this.showToast('Connection lost - working offline', 'warning');
+    this.updateNetworkStatus();
+  }
+
+  /**
+   * Update network status display
+   */
+  updateNetworkStatus() {
+    const networkStatus = document.getElementById('networkStatus');
+    if (!networkStatus) return;
+
+    const isConnected = isOnline();
+    const connectionInfo = getConnectionInfo();
+
+    const statusDot = networkStatus.querySelector('.status-dot');
+    const statusText = networkStatus.querySelector('span:last-child');
+
+    if (isConnected) {
+      statusDot.className = 'status-dot online';
+      statusText.textContent = connectionInfo.effectiveType === '4g' ? 'Online' : 'Slow Connection';
+    } else {
+      statusDot.className = 'status-dot error';
+      statusText.textContent = 'Offline';
+    }
+  }
+
+  /**
+   * Setup dashboard-specific event listeners
+   */
+  setupDashboardEventListeners() {
+    // Refresh button
+    const refreshBtn = document.getElementById('refreshDashboard');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        this.refreshDashboard();
+      });
+    }
+
+    // Time range selector
+    const timeRangeSelector = document.getElementById('timeRangeSelector');
+    if (timeRangeSelector) {
+      timeRangeSelector.addEventListener('change', (e) => {
+        this.handleTimeRangeChange(e.target.value);
+      });
+    }
+
+    // Auto-refresh toggle
+    const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+    if (autoRefreshToggle) {
+      autoRefreshToggle.addEventListener('change', (e) => {
+        this.toggleAutoRefresh(e.target.checked);
+      });
+    }
+
+    // Export buttons
+    const exportButtons = document.querySelectorAll('[data-export]');
+    exportButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const format = e.target.dataset.format || 'csv';
+        const dataType = e.target.dataset.export;
+        this.exportDashboardData(format, dataType);
+      });
+    });
+
+    // Quick action buttons
+    const quickActions = document.querySelectorAll('.quick-action');
+    quickActions.forEach(action => {
+      action.addEventListener('click', (e) => {
+        const actionType = e.target.dataset.action;
+        this.handleQuickAction(actionType);
+      });
+    });
+  }
+
+  /**
+   * Setup filter buttons for all sections
+   */
+  setupFilterButtons() {
+    const filterSections = ['students', 'courses', 'exams', 'questions', 'attempts', 'choices'];
+
+    filterSections.forEach(section => {
+      const applyBtn = document.getElementById(`apply${this.capitalizeFirst(section)}Filters`);
+      const clearBtn = document.getElementById(`clear${this.capitalizeFirst(section)}Filters`);
+
+      if (applyBtn) {
+        applyBtn.addEventListener('click', () => {
+          this.currentPage = 1;
+          this[`load${this.capitalizeFirst(section)}`]();
+        });
+      }
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          this[`clear${this.capitalizeFirst(section)}Filters`]();
+        });
+      }
+    });
+  }
+
+  /**
+   * Setup add buttons for all sections
+   */
+  setupAddButtons() {
     const addButtons = [
       'addStudentBtn', 'addCourseBtn', 'addExamBtn',
       'addQuestionBtn', 'addChoiceBtn'
@@ -96,10 +450,17 @@ class ExamManagementApp {
         });
       }
     });
+  }
 
-    // Modal functionality
-    const modalClose = document.getElementById('modalClose');
-    const modalCancel = document.getElementById('modalCancel');
+  /**
+   * Setup modal events
+   */
+  setupModalEvents() {
+    // These will be handled by your ModalComponent
+    // Adding fallback for basic functionality
+    const modalClose = document.querySelector('.modal-close, #modalClose');
+    const modalCancel = document.querySelector('.modal-cancel, #modalCancel');
+    const modalSave = document.querySelector('.modal-save, #modalSave');
 
     if (modalClose) {
       modalClose.addEventListener('click', () => {
@@ -113,51 +474,17 @@ class ExamManagementApp {
       });
     }
 
-    // Modal save
-    const modalSave = document.getElementById('modalSave');
     if (modalSave) {
       modalSave.addEventListener('click', () => {
         this.handleFormSubmit();
       });
     }
-
-    // Responsive sidebar toggle
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    if (sidebarToggle) {
-      sidebarToggle.addEventListener('click', () => {
-        this.toggleSidebar();
-      });
-    }
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      this.handleKeyboardShortcuts(e);
-    });
-
-    // Close modal on backdrop click
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('modal')) {
-        this.modalManager.hide();
-      }
-    });
-
-    // Attempts-specific event listeners
-    this.setupAttemptsEventListeners();
   }
 
   /**
    * Setup attempts-specific event listeners
    */
   setupAttemptsEventListeners() {
-    // Page size change
-    const pageSizeSelect = document.getElementById('attemptsPageSize');
-    if (pageSizeSelect) {
-      pageSizeSelect.addEventListener('change', () => {
-        this.currentPage = 1;
-        this.loadAttempts();
-      });
-    }
-
     // Refresh button
     const refreshBtn = document.getElementById('refreshAttempts');
     if (refreshBtn) {
@@ -166,20 +493,11 @@ class ExamManagementApp {
       });
     }
 
-    // Clear filters
-    const clearFiltersBtn = document.getElementById('clearAttemptFilters');
-    if (clearFiltersBtn) {
-      clearFiltersBtn.addEventListener('click', () => {
-        this.clearAttemptFilters();
-      });
-    }
-
-    // Apply filters
-    const applyFiltersBtn = document.getElementById('applyAttemptFilters');
-    if (applyFiltersBtn) {
-      applyFiltersBtn.addEventListener('click', () => {
-        this.currentPage = 1;
-        this.loadAttempts();
+    // Export button
+    const exportBtn = document.getElementById('exportAttempts');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        this.exportAttempts();
       });
     }
 
@@ -199,6 +517,66 @@ class ExamManagementApp {
   }
 
   /**
+   * Setup students-specific event listeners
+   */
+  setupStudentsEventListeners() {
+    const exportBtn = document.getElementById('exportStudents');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        this.exportStudents();
+      });
+    }
+  }
+
+  /**
+   * Setup courses-specific event listeners
+   */
+  setupCoursesEventListeners() {
+    const exportBtn = document.getElementById('exportCourses');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        this.exportCourses();
+      });
+    }
+  }
+
+  /**
+   * Setup exams-specific event listeners
+   */
+  setupExamsEventListeners() {
+    const exportBtn = document.getElementById('exportExams');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        this.exportExams();
+      });
+    }
+  }
+
+  /**
+   * Setup questions-specific event listeners
+   */
+  setupQuestionsEventListeners() {
+    const exportBtn = document.getElementById('exportQuestions');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        this.exportQuestions();
+      });
+    }
+  }
+
+  /**
+   * Setup choices-specific event listeners
+   */
+  setupChoicesEventListeners() {
+    const exportBtn = document.getElementById('exportChoices');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        this.exportChoices();
+      });
+    }
+  }
+
+  /**
    * Setup navigation
    */
   setupNavigation() {
@@ -207,24 +585,15 @@ class ExamManagementApp {
   }
 
   /**
-   * Update navigation active states
-   */
-  updateNavigationState() {
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.remove('active');
-      if (link.getAttribute('data-section') === this.currentSection) {
-        link.classList.add('active');
-      }
-    });
-  }
-
-  /**
    * Navigate to a section
    * @param {string} section - Section name
    */
   async navigateToSection(section) {
     try {
-      this.showLoading();
+      this.showLoading(`Loading ${section}...`);
+
+      // Cleanup previous section resources
+      this.cleanupSectionResources();
 
       // Update current section
       this.currentSection = section;
@@ -260,6 +629,32 @@ class ExamManagementApp {
       this.showError(`Failed to load ${section} section`);
       this.hideLoading();
     }
+  }
+
+  /**
+   * Cleanup section resources
+   */
+  cleanupSectionResources() {
+    // Cleanup dashboard resources when navigating away
+    if (this.currentSection === 'dashboard' && this.dashboardComponent) {
+      this.dashboardComponent.destroy();
+      this.dashboardComponent = null;
+    }
+
+    // Stop any ongoing processes
+    this.stopAutoRefresh();
+  }
+
+  /**
+   * Update navigation active states
+   */
+  updateNavigationState() {
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('data-section') === this.currentSection) {
+        link.classList.add('active');
+      }
+    });
   }
 
   /**
@@ -332,28 +727,61 @@ class ExamManagementApp {
   }
 
   /**
-   * Load dashboard data
+   * Enhanced dashboard loading with DashboardComponent integration
    */
   async loadDashboard() {
     try {
-      this.showLoading();
+      this.showLoading('Loading dashboard...');
 
-      // Load dashboard statistics
-      const stats = await this.loadDashboardStats();
-      this.renderDashboardStats(stats);
+      // Initialize DashboardComponent if not already initialized
+      if (!this.dashboardComponent) {
+        try {
+          this.dashboardComponent = new DashboardComponent();
+          console.log('DashboardComponent initialized successfully');
+        } catch (error) {
+          console.error('Failed to initialize DashboardComponent:', error);
+          this.dashboardComponent = null;
+        }
+      }
 
-      // Load recent activities
-      const activities = this.loadRecentActivities();
-      this.renderRecentActivities(activities);
+      // Load dashboard data using the DashboardComponent
+      if (this.dashboardComponent) {
+        await this.dashboardComponent.loadDashboardData();
+      } else {
+        // Fallback to basic dashboard
+        await this.loadBasicDashboard();
+      }
 
-      // Load API health
-      this.updateAPIHealth();
+      // Update dashboard-specific UI elements
+      this.updateDashboardUI();
 
       this.hideLoading();
     } catch (error) {
       console.error('Failed to load dashboard:', error);
-      this.showError('Failed to load dashboard data');
+      this.handleError(error, 'dashboard loading');
       this.hideLoading();
+    }
+  }
+
+  /**
+   * Basic dashboard fallback
+   */
+  async loadBasicDashboard() {
+    try {
+      // Load basic statistics
+      const stats = await this.loadDashboardStats();
+      this.renderBasicStats(stats);
+
+      // Load recent activities
+      const activities = await this.loadRecentActivities();
+      this.renderRecentActivities(activities);
+
+      // Update API health
+      this.updateAPIHealth();
+
+    } catch (error) {
+      console.error('Failed to load basic dashboard:', error);
+      throw error;
     }
   }
 
@@ -363,32 +791,30 @@ class ExamManagementApp {
    */
   async loadDashboardStats(params = {}) {
     try {
-      // Try to load from APIs, fallback to mock data if APIs not available
       let studentStats, courseStats, examStats, attemptStats;
 
-      try {
-        if (typeof studentsAPI!== 'undefined') {
-          studentStats = await studentsAPI.getAll(1, 1);
-        }
-        if (typeof studentsAPI !== 'undefined') {
-          courseStats = await studentsAPI.getAll(1, 1);
-        }
-        if (typeof studentsAPI !== 'undefined') {
-          examStats = await studentsAPI.getAll(1, 1);
-        }
-        if (typeof attemptsAPI !== 'undefined') {
-          // Use the new attemptsAPI with proper parameters
-          attemptStats = await attemptsAPI.getAll({ page: 0, size: 1 });
-        }
-      } catch (apiError) {
-        console.warn('API not available, using mock data:', apiError);
+      // Use the actual APIs with proper error handling
+      if (window.studentsAPI && typeof window.studentsAPI.getStats === 'function') {
+        studentStats = await window.studentsAPI.getStats();
+      }
+
+      if (window.coursesAPI && typeof window.coursesAPI.getStats === 'function') {
+        courseStats = await window.coursesAPI.getStats();
+      }
+
+      if (window.examsAPI && typeof window.examsAPI.getStats === 'function') {
+        examStats = await window.examsAPI.getStats();
+      }
+
+      if (window.attemptsAPI && typeof window.attemptsAPI.countAttempts === 'function') {
+        attemptStats = await window.attemptsAPI.countAttempts();
       }
 
       return {
-        students: studentStats?.total || studentStats?.totalElements || Math.floor(Math.random() * 100) + 50,
-        courses: courseStats?.total || courseStats?.totalElements || Math.floor(Math.random() * 20) + 10,
-        exams: examStats?.total || examStats?.totalElements || Math.floor(Math.random() * 30) + 15,
-        attempts: attemptStats?.total || attemptStats?.totalElements || Math.floor(Math.random() * 200) + 100
+        students: studentStats?.data || studentStats?.total || 0,
+        courses: courseStats?.data || courseStats?.total || 0,
+        exams: examStats?.data || examStats?.total || 0,
+        attempts: attemptStats?.data || attemptStats?.total || 0
       };
     } catch (error) {
       console.error('Failed to load dashboard stats:', error);
@@ -437,50 +863,55 @@ class ExamManagementApp {
   }
 
   /**
-   * Render dashboard statistics
+   * Render basic statistics
    * @param {Object} stats - Statistics data
    */
-  renderDashboardStats(stats) {
-    // Update stat numbers with animation
-    const elements = {
-      totalStudents: document.getElementById('totalStudents'),
-      totalCourses: document.getElementById('totalCourses'),
-      totalExams: document.getElementById('totalExams'),
-      totalAttempts: document.getElementById('totalAttempts')
-    };
+  renderBasicStats(stats) {
+    const statsContainer = document.getElementById('dashboard-stats');
+    if (!statsContainer) return;
 
-    Object.keys(elements).forEach(key => {
-      if (elements[key]) {
-        this.animateNumber(elements[key], stats[key.replace('total', '').toLowerCase()] || 0);
-      }
-    });
-  }
-
-  /**
-   * Animate number counting
-   * @param {HTMLElement} element - Element to animate
-   * @param {number} targetValue - Target value
-   */
-  animateNumber(element, targetValue) {
-    const startValue = parseInt(element.textContent) || 0;
-    const duration = 1000;
-    const startTime = performance.now();
-
-    const animate = (currentTime) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOutQuart);
-
-      element.textContent = currentValue.toLocaleString();
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    requestAnimationFrame(animate);
+    statsContainer.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-icon students">
+          <i class="fas fa-user-graduate"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Total Students</h3>
+          <p class="stat-number">${stats.students || 0}</p>
+          <span class="stat-change positive">+12%</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon courses">
+          <i class="fas fa-book"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Active Courses</h3>
+          <p class="stat-number">${stats.courses || 0}</p>
+          <span class="stat-change positive">+8%</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon exams">
+          <i class="fas fa-file-alt"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Total Exams</h3>
+          <p class="stat-number">${stats.exams || 0}</p>
+          <span class="stat-change neutral">+5%</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon attempts">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Exam Attempts</h3>
+          <p class="stat-number">${stats.attempts || 0}</p>
+          <span class="stat-change positive">+15%</span>
+        </div>
+      </div>
+    `;
   }
 
   /**
@@ -488,8 +919,13 @@ class ExamManagementApp {
    * @param {Array} activities - Activities data
    */
   renderRecentActivities(activities) {
-    const activitiesContainer = document.getElementById('recentActivity');
+    const activitiesContainer = document.getElementById('recent-activities');
     if (!activitiesContainer) return;
+
+    if (activities.length === 0) {
+      activitiesContainer.innerHTML = '<div class="no-activities">No recent activities</div>';
+      return;
+    }
 
     activitiesContainer.innerHTML = activities.map(activity => `
       <div class="activity-item">
@@ -523,149 +959,916 @@ class ExamManagementApp {
    * Update API health status
    */
   updateAPIHealth() {
-    const healthContainer = document.getElementById('apiHealth');
-    if (!healthContainer) return;
+    const apiStatusElement = document.getElementById('apiStatus');
+    if (!apiStatusElement) return;
 
-    const endpoints = [
-      { name: 'Students API', status: 'healthy', response: `${this.getRandomNumber(30, 60)}ms` },
-      { name: 'Courses API', status: 'healthy', response: `${this.getRandomNumber(25, 55)}ms` },
-      { name: 'Exams API', status: 'healthy', response: `${this.getRandomNumber(40, 70)}ms` },
-      { name: 'Questions API', status: 'healthy', response: `${this.getRandomNumber(35, 65)}ms` },
-      { name: 'Attempts API', status: 'healthy', response: `${this.getRandomNumber(30, 60)}ms` }
+    // Check if APIs are available
+    const apis = ['studentsAPI', 'coursesAPI', 'examsAPI', 'questionsAPI', 'choicesAPI', 'attemptsAPI'];
+    const allApisAvailable = apis.every(api => window[api] !== undefined);
+
+    const statusDot = apiStatusElement.querySelector('.status-dot');
+    const statusText = apiStatusElement.querySelector('span:last-child');
+
+    if (allApisAvailable) {
+      statusDot.className = 'status-dot online';
+      statusText.textContent = 'All Systems Online';
+    } else {
+      statusDot.className = 'status-dot error';
+      statusText.textContent = 'API Issues Detected';
+    }
+  }
+
+  /**
+   * Update dashboard UI elements
+   */
+  updateDashboardUI() {
+    // Update time range selector to match dashboard component
+    const timeRangeSelector = document.getElementById('timeRangeSelector');
+    if (timeRangeSelector && this.dashboardComponent) {
+      timeRangeSelector.value = this.dashboardComponent.currentTimeRange;
+    }
+
+    // Update auto-refresh toggle
+    const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+    if (autoRefreshToggle && this.dashboardComponent) {
+      autoRefreshToggle.checked = this.dashboardComponent.autoRefreshEnabled;
+    }
+
+    // Render network status
+    this.renderNetworkStatus();
+  }
+
+  /**
+   * Render network status from dashboard component
+   */
+  renderNetworkStatus() {
+    if (!this.dashboardComponent) return;
+
+    const networkStatus = this.dashboardComponent.getNetworkStatus();
+    const statusElement = document.getElementById('networkStatus');
+
+    if (statusElement) {
+      const statusDot = statusElement.querySelector('.status-dot');
+      const statusText = statusElement.querySelector('span:last-child');
+
+      if (networkStatus.online) {
+        statusDot.className = 'status-dot online';
+        statusText.textContent = networkStatus.apiHealth === 'healthy' ? 'All Systems Online' : 'API Issues';
+      } else {
+        statusDot.className = 'status-dot error';
+        statusText.textContent = 'Offline';
+      }
+    }
+  }
+
+  /**
+   * Enhanced refresh dashboard using DashboardComponent
+   */
+  async refreshDashboard() {
+    try {
+      if (this.dashboardComponent) {
+        await this.dashboardComponent.refreshDashboard();
+      } else {
+        await this.loadDashboard();
+      }
+    } catch (error) {
+      console.error('Failed to refresh dashboard:', error);
+      this.showError('Failed to refresh dashboard');
+    }
+  }
+
+  /**
+   * Handle time range change with DashboardComponent integration
+   */
+  async handleTimeRangeChange(range) {
+    try {
+      if (this.dashboardComponent) {
+        await this.dashboardComponent.changeTimeRange(range);
+      } else {
+        // Fallback to basic time range change
+        this.currentTimeRange = range;
+        localStorage.setItem('timeRange', range);
+        await this.loadDashboard();
+      }
+    } catch (error) {
+      console.error('Failed to change time range:', error);
+      this.showError('Failed to change time range');
+    }
+  }
+
+  /**
+   * Toggle auto-refresh with DashboardComponent integration
+   */
+  toggleAutoRefresh(enabled) {
+    if (this.dashboardComponent) {
+      this.dashboardComponent.toggleAutoRefresh(enabled);
+    } else {
+      // Basic auto-refresh implementation
+      this.autoRefreshEnabled = enabled;
+      localStorage.setItem('autoRefresh', enabled);
+
+      if (enabled) {
+        this.autoRefreshInterval = setInterval(() => {
+          this.refreshDashboard();
+        }, 30000);
+        this.showToast('Auto-refresh enabled', 'success');
+      } else {
+        this.stopAutoRefresh();
+        this.showToast('Auto-refresh disabled', 'info');
+      }
+    }
+  }
+
+  /**
+   * Stop auto refresh
+   */
+  stopAutoRefresh() {
+    if (this.autoRefreshInterval) {
+      clearInterval(this.autoRefreshInterval);
+      this.autoRefreshInterval = null;
+    }
+  }
+
+  /**
+   * Enhanced search functionality with DashboardComponent integration
+   */
+  handleSearch(query) {
+    if (this.dashboardComponent) {
+      this.dashboardComponent.handleSearch(query);
+    } else {
+      // Basic search implementation
+      this.performGlobalSearch(query);
+    }
+  }
+
+  /**
+   * Export data using DashboardComponent
+   */
+  async exportDashboardData(format, dataType) {
+    try {
+      if (this.dashboardComponent) {
+        await this.dashboardComponent.exportData(format, dataType);
+      } else {
+        this.showToast('Export functionality requires dashboard component', 'warning');
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      this.showError('Failed to export data');
+    }
+  }
+
+  /**
+   * Handle quick actions from dashboard
+   */
+  handleQuickAction(actionType) {
+    switch (actionType) {
+      case 'add-student':
+        this.showStudentForm();
+        break;
+      case 'create-exam':
+        this.showExamForm();
+        break;
+      case 'add-question':
+        this.showQuestionForm();
+        break;
+      case 'view-reports':
+        this.exportDashboardData('pdf', 'reports');
+        break;
+      default:
+        console.warn('Unknown quick action:', actionType);
+    }
+  }
+
+  /**
+   * Enhanced table rendering with DataTableComponent
+   */
+  renderEnhancedTable(containerId, data, columns, options = {}) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`Container not found: ${containerId}`);
+      return null;
+    }
+
+    const tableId = `${containerId}Table`;
+
+    try {
+      if (!this.tableInstances.has(tableId)) {
+        const tableOptions = {
+          pageSize: this.pageSize,
+          sortable: true,
+          searchable: true,
+          filterable: true,
+          exportable: true,
+          bulkActions: true,
+          responsive: true,
+          storageKey: `${containerId}_prefs`,
+          ...options
+        };
+
+        const tableInstance = new DataTableComponent(containerId, tableOptions);
+        this.tableInstances.set(tableId, tableInstance);
+
+        // Set up event listeners for table actions
+        container.addEventListener('table:rowEdit', (e) => {
+          this.handleTableRowEdit(containerId, e.detail);
+        });
+
+        container.addEventListener('table:rowDelete', (e) => {
+          this.handleTableRowDelete(containerId, e.detail);
+        });
+
+        container.addEventListener('table:rowView', (e) => {
+          this.handleTableRowView(containerId, e.detail);
+        });
+
+        console.log(`DataTable initialized: ${tableId}`);
+      }
+
+      const tableInstance = this.tableInstances.get(tableId);
+      if (tableInstance) {
+        tableInstance.setData(data, columns);
+        return tableInstance;
+      }
+    } catch (error) {
+      console.error(`Failed to initialize table ${tableId}:`, error);
+      this.handleError(error, `table initialization: ${containerId}`);
+    }
+
+    return null;
+  }
+
+  /**
+   * Enhanced form handling with FormComponent
+   */
+  async showEnhancedForm(formConfig, modalConfig = {}) {
+    try {
+      const result = await ModalComponent.form(formConfig, modalConfig);
+
+      if (result) {
+        // Refresh the relevant section
+        await this.refreshCurrentSection();
+        return result;
+      }
+    } catch (error) {
+      console.error('Form operation failed:', error);
+      this.handleError(error, 'form operation');
+    }
+
+    return null;
+  }
+
+  /**
+   * Handle table row edit
+   */
+  handleTableRowEdit(tableType, detail) {
+    const { rowId, rowData } = detail;
+
+    switch (tableType) {
+      case 'studentsTableContainer':
+        this.editStudent(rowData.ssn);
+        break;
+      case 'coursesTableContainer':
+        this.editCourse(rowData.courseId);
+        break;
+      case 'examsTableContainer':
+        this.editExam(rowData.examId);
+        break;
+      case 'questionsTableContainer':
+        this.editQuestion(rowData.questionId);
+        break;
+      case 'choicesTableContainer':
+        this.editChoice(rowData.choiceId);
+        break;
+      default:
+        console.warn('Unknown table type for edit:', tableType);
+    }
+  }
+
+  /**
+   * Handle table row delete
+   */
+  handleTableRowDelete(tableType, detail) {
+    const { rowId, rowData } = detail;
+
+    switch (tableType) {
+      case 'studentsTableContainer':
+        this.deleteStudent(rowData.ssn);
+        break;
+      case 'coursesTableContainer':
+        this.deleteCourse(rowData.courseId);
+        break;
+      case 'examsTableContainer':
+        this.deleteExam(rowData.examId);
+        break;
+      case 'questionsTableContainer':
+        this.deleteQuestion(rowData.questionId);
+        break;
+      case 'choicesTableContainer':
+        this.deleteChoice(rowData.choiceId);
+        break;
+      default:
+        console.warn('Unknown table type for delete:', tableType);
+    }
+  }
+
+  /**
+   * Handle table row view
+   */
+  handleTableRowView(tableType, detail) {
+    const { rowId, rowData } = detail;
+
+    switch (tableType) {
+      case 'attemptsTableContainer':
+        this.viewAttempt(rowData.attemptId);
+        break;
+      default:
+        console.log('View details for:', rowData);
+    }
+  }
+// Email validation
+  isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+// SSN validation (already defined but included for completeness)
+  isValidSSN(ssn) {
+    return /^\d{14}$/.test(ssn);
+  }
+
+// Phone validation
+  isValidPhone(phone) {
+    return /^\d{11}$/.test(phone);
+  }
+
+// Date validation for birthdate
+  isValidBirthdate(date) {
+    const birthDate = new Date(date);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    return age >= 16 && age <= 100;
+  }
+  /**
+   * Enhanced student management methods
+   */
+  getStudentFormFields() {
+    return [
+      {
+        name: 'ssn',
+        label: 'SSN',
+        type: 'text',
+        required: true,
+        pattern: '^\\d{14}$',
+        validate: (value) => /^\d{14}$/.test(value) ? true : 'Please enter a valid 14-digit SSN',
+        placeholder: 'Enter 14-digit SSN',
+        maxLength: 14
+      },
+      {
+        name: 'firstName',
+        label: 'First Name',
+        type: 'text',
+        required: true,
+        maxLength: 50,
+        placeholder: 'Enter first name'
+      },
+      {
+        name: 'lastName',
+        label: 'Last Name',
+        type: 'text',
+        required: true,
+        maxLength: 50,
+        placeholder: 'Enter last name'
+      },
+      {
+        name: 'gender',
+        label: 'Gender',
+        type: 'select',
+        required: true,
+        options: [
+          { label: 'Male', value: 'M' },
+          { label: 'Female', value: 'F' },
+          { label: 'Other', value: 'O' }
+        ],
+        placeholder: 'Select gender',
+        maxLength: 10
+      },
+      {
+        name: 'birthdate',
+        label: 'Birthdate',
+        type: 'date',
+        required: true,
+        validate: (value) => {
+          const birthDate = new Date(value);
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+          return age >= 16 && age <= 100 ? true : 'Age must be between 16 and 100 years';
+        }
+      },
+      {
+        name: 'email',
+        label: 'Email',
+        type: 'email',
+        required: true,
+        maxLength: 100,
+        placeholder: 'Enter email address',
+        validate: (value) => isValidEmail(value) ? true : 'Please enter a valid email address'
+      },
+      {
+        name: 'phone',
+        label: 'Phone',
+        type: 'tel',
+        required: true,
+        pattern: '^\\d{11}$',
+        placeholder: 'Enter 11-digit phone number',
+        maxLength: 11,
+        validate: (value) => /^\d{11}$/.test(value) ? true : 'Please enter a valid 11-digit phone number'
+      },
+      {
+        name: 'graduationYear',
+        label: 'Graduation Year',
+        type: 'number',
+        required: true,
+        min: 2000,
+        max: 2030,
+        placeholder: 'Enter graduation year (2000-2030)'
+      },
+      {
+        name: 'city',
+        label: 'City',
+        type: 'text',
+        maxLength: 50,
+        placeholder: 'Enter city'
+      }
     ];
-
-    healthContainer.innerHTML = endpoints.map(endpoint => `
-      <div class="health-item">
-        <div class="health-indicator ${endpoint.status}">
-          <i class="fas fa-${endpoint.status === 'healthy' ? 'check' : 'times'}"></i>
-        </div>
-        <div class="health-info">
-          <span class="health-name">${endpoint.name}</span>
-          <span class="health-response">${endpoint.response}</span>
-        </div>
-      </div>
-    `).join('');
+  }
+  getCourseFormFields() {
+    return [
+      {
+        name: 'courseName',
+        label: 'Course Name',
+        type: 'text',
+        required: true,
+        maxLength: 100,
+        placeholder: 'Enter course name'
+      },
+      {
+        name: 'duration',
+        label: 'Duration (hours)',
+        type: 'number',
+        required: true,
+        min: 1,
+        step: 0.5,
+        placeholder: 'Enter course duration in hours'
+      }
+    ];
+  }
+  getExamFormFields() {
+    return [
+      {
+        name: 'title',
+        label: 'Exam Title',
+        type: 'text',
+        required: true,
+        placeholder: 'Enter exam title'
+      },
+      {
+        name: 'courseId',
+        label: 'Course',
+        type: 'select',
+        required: true,
+        options: this.getCourseOptions(),
+        placeholder: 'Select course',
+        validate: (value) => value ? true : 'Please select a course'
+      },
+      {
+        name: 'duration',
+        label: 'Duration (minutes)',
+        type: 'number',
+        required: true,
+        min: 11,
+        placeholder: 'Enter exam duration in minutes (minimum 11)'
+      },
+      {
+        name: 'numMcq',
+        label: 'Number of MCQ Questions',
+        type: 'number',
+        required: true,
+        min: 1,
+        placeholder: 'Enter number of multiple choice questions'
+      },
+      {
+        name: 'numTf',
+        label: 'Number of True/False Questions',
+        type: 'number',
+        required: true,
+        min: 1,
+        placeholder: 'Enter number of true/false questions'
+      }
+    ];
+  }
+  getQuestionFormFields() {
+    return [
+      {
+        name: 'questionText',
+        label: 'Question Text',
+        type: 'textarea',
+        required: true,
+        maxLength: 300,
+        placeholder: 'Enter question text (max 300 characters)',
+        rows: 4
+      },
+      {
+        name: 'type',
+        label: 'Question Type',
+        type: 'select',
+        required: true,
+        options: [
+          { label: 'Multiple Choice (MCQ)', value: 'MCQ' },
+          { label: 'True/False', value: 'T/F' }
+        ],
+        placeholder: 'Select question type'
+      },
+      {
+        name: 'courseId',
+        label: 'Course',
+        type: 'select',
+        required: true,
+        options: this.getCourseOptions(),
+        placeholder: 'Select course',
+        validate: (value) => value ? true : 'Please select a course'
+      }
+    ];
+  }
+  getChoiceFormFields() {
+    return [
+      {
+        name: 'questionId',
+        label: 'Question',
+        type: 'select',
+        required: true,
+        options: this.getQuestionOptions(),
+        placeholder: 'Select question',
+        validate: (value) => value ? true : 'Please select a question'
+      },
+      {
+        name: 'choiceText',
+        label: 'Choice Text',
+        type: 'text',
+        required: true,
+        maxLength: 300,
+        placeholder: 'Enter choice text (max 300 characters)'
+      },
+      {
+        name: 'isCorrect',
+        label: 'Is Correct Answer',
+        type: 'checkbox',
+        defaultValue: false
+      }
+    ];
+  }
+  getExamSubmissionFormFields() {
+    return [
+      {
+        name: 'ssn',
+        label: 'Student SSN',
+        type: 'text',
+        required: true,
+        pattern: '^\\d{14}$',
+        placeholder: 'Enter your 14-digit SSN',
+        validate: (value) => /^\d{14}$/.test(value) ? true : 'Please enter a valid 14-digit SSN'
+      },
+      {
+        name: 'examId',
+        label: 'Exam',
+        type: 'select',
+        required: true,
+        options: this.getAvailableExamOptions(),
+        placeholder: 'Select exam to take',
+        validate: (value) => value ? true : 'Please select an exam'
+      }
+      // Answers would be dynamically generated based on selected exam
+    ];
+  }
+  async getCourseOptions() {
+    try {
+      if (window.coursesAPI) {
+        const response = await window.coursesAPI.getAll({ noPagination: true });
+        const courses = normalizeApiResponse(response).data || [];
+        return courses.map(course => ({
+          label: course.courseName,
+          value: course.courseId
+        }));
+      }
+      return []; // Fallback empty array
+    } catch (error) {
+      console.error('Failed to load course options:', error);
+      return [];
+    }
+  }
+  async getQuestionOptions() {
+    try {
+      if (window.questionsAPI) {
+        const response = await window.questionsAPI.getAll({ noPagination: true });
+        const questions = normalizeApiResponse(response).data || [];
+        return questions.map(question => ({
+          label: `${question.questionId} - ${question.questionText.substring(0, 50)}...`,
+          value: question.questionId
+        }));
+      }
+      return []; // Fallback empty array
+    } catch (error) {
+      console.error('Failed to load question options:', error);
+      return [];
+    }
+  }
+  async getAvailableExamOptions() {
+    try {
+      if (window.examsAPI) {
+        const response = await window.examsAPI.getAll();
+        const exams = normalizeApiResponse(response).data || [];
+        return exams.map(exam => ({
+          label: `${exam.title} (${exam.courseName})`,
+          value: exam.examId
+        }));
+      }
+      return []; // Fallback empty array
+    } catch (error) {
+      console.error('Failed to load exam options:', error);
+      return [];
+    }
   }
 
-  /**
-   * Handle add button clicks
-   * @param {string} buttonId - Button ID
-   */
-  handleAddButton(buttonId) {
-    const forms = {
-      'addStudentBtn': this.getStudentForm(),
-      'addCourseBtn': this.getCourseForm(),
-      'addExamBtn': this.getExamForm(),
-      'addQuestionBtn': this.getQuestionForm(),
-      'addChoiceBtn': this.getChoiceForm()
+// Student Form
+  async showStudentForm(studentData = null) {
+    const formConfig = {
+      apiService: 'students',
+      apiMethod: studentData ? 'update' : 'create',
+      entityId: studentData?.ssn,
+      fields: this.getStudentFormFields(),
+      successMessage: studentData ? 'Student updated successfully' : 'Student created successfully'
     };
 
-    const titles = {
-      'addStudentBtn': 'Add New Student',
-      'addCourseBtn': 'Add New Course',
-      'addExamBtn': 'Create New Exam',
-      'addQuestionBtn': 'Add New Question',
-      'addChoiceBtn': 'Add New Choice'
+    const modalConfig = {
+      title: studentData ? 'Edit Student' : 'Add New Student',
+      initialData: studentData,
+      size: 'lg'
     };
 
-    this.modalManager.show({
-      title: titles[buttonId],
-      content: forms[buttonId] || '<p>Form not available</p>'
-    });
+    return await this.showEnhancedForm(formConfig, modalConfig);
+  }
+
+// Course Form
+  async showCourseForm(courseData = null) {
+    const formConfig = {
+      apiService: 'courses',
+      apiMethod: courseData ? 'update' : 'create',
+      entityId: courseData?.courseId,
+      fields: this.getCourseFormFields(),
+      successMessage: courseData ? 'Course updated successfully' : 'Course created successfully'
+    };
+
+    const modalConfig = {
+      title: courseData ? 'Edit Course' : 'Add New Course',
+      initialData: courseData,
+      size: 'md'
+    };
+
+    return await this.showEnhancedForm(formConfig, modalConfig);
+  }
+
+// Exam Form
+  async showExamForm(examData = null) {
+    const formConfig = {
+      apiService: 'exams',
+      apiMethod: examData ? 'update' : 'create',
+      entityId: examData?.examId,
+      fields: this.getExamFormFields(),
+      successMessage: examData ? 'Exam updated successfully' : 'Exam created successfully'
+    };
+
+    const modalConfig = {
+      title: examData ? 'Edit Exam' : 'Add New Exam',
+      initialData: examData,
+      size: 'lg'
+    };
+
+    return await this.showEnhancedForm(formConfig, modalConfig);
+  }
+
+// Question Form
+  async showQuestionForm(questionData = null) {
+    const formConfig = {
+      apiService: 'questions',
+      apiMethod: questionData ? 'update' : 'create',
+      entityId: questionData?.questionId,
+      fields: this.getQuestionFormFields(),
+      successMessage: questionData ? 'Question updated successfully' : 'Question created successfully'
+    };
+
+    const modalConfig = {
+      title: questionData ? 'Edit Question' : 'Add New Question',
+      initialData: questionData,
+      size: 'lg'
+    };
+
+    return await this.showEnhancedForm(formConfig, modalConfig);
+  }
+
+// Choice Form
+  async showChoiceForm(choiceData = null) {
+    const formConfig = {
+      apiService: 'choices',
+      apiMethod: choiceData ? 'update' : 'create',
+      entityId: choiceData?.choiceId,
+      fields: this.getChoiceFormFields(),
+      successMessage: choiceData ? 'Choice updated successfully' : 'Choice created successfully'
+    };
+
+    const modalConfig = {
+      title: choiceData ? 'Edit Choice' : 'Add New Choice',
+      initialData: choiceData,
+      size: 'md'
+    };
+
+    return await this.showEnhancedForm(formConfig, modalConfig);
+  }
+  async editStudent(ssn) {
+    try {
+      this.showLoading('Loading student data...');
+      const student = await window.studentsAPI.getById(ssn);
+      await this.showStudentForm(student);
+    } catch (error) {
+      this.handleError(error, 'loading student');
+    } finally {
+      this.hideLoading();
+    }
+  }
+  async editCourse(courseId) {
+    try {
+      this.showLoading('Loading course data...');
+      const course = await window.coursesAPI.getById(courseId);
+      await this.showCourseForm(course);
+    } catch (error) {
+      this.handleError(error, 'loading course');
+    } finally {
+      this.hideLoading();
+    }
+  }
+  async editExam(examId) {
+    try {
+      this.showLoading('Loading exam data...');
+      const exam = await window.examsAPI.getById(examId);
+      await this.showExamForm(exam);
+    } catch (error) {
+      this.handleError(error, 'loading exam');
+    } finally {
+      this.hideLoading();
+    }
+  }
+  async editQuestion(questionId) {
+    try {
+      this.showLoading('Loading question data...');
+      const question = await window.questionsAPI.getById(questionId);
+      await this.showQuestionForm(question);
+    } catch (error) {
+      this.handleError(error, 'loading question');
+    } finally {
+      this.hideLoading();
+    }
+  }
+  async editChoice(choiceId) {
+    try {
+      this.showLoading('Loading choice data...');
+      const choice = await window.choicesAPI.getById(choiceId);
+      await this.showChoiceForm(choice);
+    } catch (error) {
+      this.handleError(error, 'loading choice');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  async deleteStudent(ssn) {
+    const confirmed = await showConfirm(
+        'Delete Student',
+        'Are you sure you want to delete this student? This action cannot be undone.',
+        'Delete',
+        'Cancel'
+    );
+
+    if (confirmed) {
+      try {
+        this.showLoading('Deleting student...');
+        await window.studentsAPI.delete(ssn);
+        this.showToast('Student deleted successfully', 'success');
+        await this.loadStudents();
+      } catch (error) {
+        this.handleError(error, 'deleting student');
+      } finally {
+        this.hideLoading();
+      }
+    }
   }
 
   /**
-   * Get student form HTML
-   * @returns {string} Form HTML
-   */
-  getStudentForm() {
-    return `
-      <form id="studentForm" class="data-form">
-        <div class="form-group">
-          <label for="studentSSN">SSN</label>
-          <input type="text" id="studentSSN" class="form-control" required inputmode="numeric" pattern="\\d{14}" maxlength="14" placeholder="12345678901234">
-        </div>
-        <div class="form-group">
-          <label for="studentName">Full Name</label>
-          <input type="text" id="studentName" class="form-control" required>
-        </div>
-        <div class="form-group">
-          <label for="studentEmail">Email</label>
-          <input type="email" id="studentEmail" class="form-control" required>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="studentAge">Age</label>
-            <input type="number" id="studentAge" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label for="studentGender">Gender</label>
-            <select id="studentGender" class="form-select" required>
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="studentCity">City</label>
-          <input type="text" id="studentCity" class="form-control">
-        </div>
-        <div class="form-group">
-          <label for="studentGradYear">Graduation Year</label>
-          <input type="number" id="studentGradYear" class="form-control">
-        </div>
-      </form>
-    `;
-  }
-
-  /**
-   * Get course form HTML
-   * @returns {string} Form HTML
-   */
-  getCourseForm() {
-    return `
-      <form id="courseForm" class="data-form">
-        <div class="form-group">
-          <label for="courseName">Course Name</label>
-          <input type="text" id="courseName" class="form-control" required>
-        </div>
-        <div class="form-group">
-          <label for="courseDuration">Duration (hours)</label>
-          <input type="number" id="courseDuration" class="form-control" required>
-        </div>
-        <div class="form-check">
-          <input type="checkbox" id="courseHasExams" class="form-check-input">
-          <label for="courseHasExams" class="form-check-label">Has Exams</label>
-        </div>
-        <div class="form-check">
-          <input type="checkbox" id="courseHasQuestions" class="form-check-input">
-          <label for="courseHasQuestions" class="form-check-label">Has Questions</label>
-        </div>
-      </form>
-    `;
-  }
-
-  // Add other form methods similarly...
-
-  /**
-   * Load students data
+   * Enhanced students data loading
    */
   async loadStudents() {
     try {
-      this.showLoading();
+      this.showLoading('Loading students...');
 
-      // Load students from API
-      const response = await studentsAPI.getAll(this.currentPage, 1);
-      this.renderStudentsTable(response.content || []);
-      this.renderPagination('studentsPagination', response.totalPages || 1, this.currentPage);
+      if (!window.studentsAPI) {
+        throw new Error('Students API not available');
+      }
 
+      const filters = this.getStudentFilters();
+      const response = await retry(() => window.studentsAPI.getAll(filters), 3, 1000);
+
+      const normalizedResponse = normalizeApiResponse(response);
+
+      if (!normalizedResponse.success) {
+        throw new Error(normalizedResponse.message || 'Failed to load students');
+      }
+
+      const students = safeArrayAccess(normalizedResponse.data?.content, 0, []) || normalizedResponse.data || [];
+      const totalElements = normalizedResponse.data?.totalElements || students.length;
+
+      // Define columns for DataTable
+      const columns = [
+        { key: 'ssn', title: 'SSN', sortable: true, searchable: true },
+        { key: 'firstName', title: 'First Name', sortable: true, searchable: true },
+        { key: 'lastName', title: 'Last Name', sortable: true, searchable: true },
+        { key: 'email', title: 'Email', type: 'email', searchable: true },
+        { key: 'age', title: 'Age', type: 'number', sortable: true },
+        { key: 'gender', title: 'Gender', filterable: true },
+        { key: 'city', title: 'City', filterable: true, searchable: true },
+        { key: 'graduationYear', title: 'Graduation Year', type: 'number', sortable: true },
+        {
+          key: 'actions',
+          title: 'Actions',
+          sortable: false,
+          searchable: false,
+          render: (value, row) => this.renderStudentActions(row)
+        }
+      ];
+
+      // Render enhanced table
+      this.renderEnhancedTable('studentsTableContainer', students, columns);
+
+      this.updateStudentStats(students, totalElements);
       this.hideLoading();
     } catch (error) {
       console.error('Failed to load students:', error);
-      this.showError('Failed to load students data');
+      this.handleError(error, 'loading students');
       this.hideLoading();
     }
+  }
+
+  renderStudentActions(student) {
+    return `
+      <div class="action-buttons">
+        <button class="btn btn-sm btn-primary" onclick="app.editStudent('${student.ssn}')" title="Edit">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="app.deleteStudent('${student.ssn}')" title="Delete">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Get student filters from UI
+   * @returns {Object} Filters object
+   */
+  getStudentFilters() {
+    return {
+      firstName: document.getElementById('studentSearch')?.value || '',
+      gender: document.getElementById('studentGenderFilter')?.value || '',
+      minAge: document.getElementById('studentMinAge')?.value || '',
+      maxAge: document.getElementById('studentMaxAge')?.value || '',
+      graduationYear: document.getElementById('studentGraduationYear')?.value || '',
+      page: this.currentPage - 1,
+      size: this.pageSize,
+      sortBy: document.getElementById('studentSortBy')?.value || 'firstName',
+      sortDir: document.getElementById('studentSortDir')?.value || 'ASC'
+    };
+  }
+
+  /**
+   * Clear student filters
+   */
+  clearStudentFilters() {
+    document.getElementById('studentSearch').value = '';
+    document.getElementById('studentGenderFilter').value = '';
+    document.getElementById('studentMinAge').value = '';
+    document.getElementById('studentMaxAge').value = '';
+    document.getElementById('studentGraduationYear').value = '';
+    document.getElementById('studentSortBy').value = 'firstName';
+    document.getElementById('studentSortDir').value = 'ASC';
+
+    this.currentPage = 1;
+    this.loadStudents();
   }
 
   /**
@@ -673,19 +1876,93 @@ class ExamManagementApp {
    */
   async loadCourses() {
     try {
-      this.showLoading();
+      this.showLoading('Loading courses...');
 
-      // Load courses from API
-      const response = await coursesAPI.getAll(this.currentPage, 1);
-      this.renderCoursesTable(response.content || []);
-      this.renderPagination('coursesPagination', response.totalPages || 1, this.currentPage);
+      if (!window.coursesAPI) {
+        throw new Error('Courses API not available');
+      }
 
+      const filters = this.getCourseFilters();
+      const response = await retry(() => window.coursesAPI.getAll(filters), 3, 1000);
+
+      const normalizedResponse = normalizeApiResponse(response);
+
+      if (!normalizedResponse.success) {
+        throw new Error(normalizedResponse.message || 'Failed to load courses');
+      }
+
+      const courses = safeArrayAccess(normalizedResponse.data?.content, 0, []) || normalizedResponse.data || [];
+      const totalElements = normalizedResponse.data?.totalElements || courses.length;
+
+      // Define columns for DataTable
+      const columns = [
+        { key: 'courseId', title: 'ID', sortable: true },
+        { key: 'courseName', title: 'Course Name', sortable: true, searchable: true },
+        { key: 'duration', title: 'Duration', sortable: true },
+        { key: 'examCount', title: 'Exams', type: 'number', sortable: true },
+        { key: 'questionCount', title: 'Questions', type: 'number', sortable: true },
+        {
+          key: 'actions',
+          title: 'Actions',
+          sortable: false,
+          searchable: false,
+          render: (value, row) => this.renderCourseActions(row)
+        }
+      ];
+
+      // Render enhanced table
+      this.renderEnhancedTable('coursesTableContainer', courses, columns);
+
+      this.updateCourseStats(courses, totalElements);
       this.hideLoading();
     } catch (error) {
       console.error('Failed to load courses:', error);
-      this.showError('Failed to load courses data');
+      this.handleError(error, 'loading courses');
       this.hideLoading();
     }
+  }
+
+  renderCourseActions(course) {
+    return `
+      <div class="action-buttons">
+        <button class="btn btn-sm btn-primary" onclick="app.editCourse('${course.courseId}')" title="Edit">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="app.deleteCourse('${course.courseId}')" title="Delete">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Get course filters from UI
+   * @returns {Object} Filters object
+   */
+  getCourseFilters() {
+    return {
+      courseName: document.getElementById('courseSearch')?.value || '',
+      minDuration: document.getElementById('courseMinDuration')?.value || '',
+      maxDuration: document.getElementById('courseMaxDuration')?.value || '',
+      page: this.currentPage - 1,
+      size: this.pageSize,
+      sortBy: document.getElementById('courseSortBy')?.value || 'courseName',
+      sortDir: document.getElementById('courseSortDir')?.value || 'ASC'
+    };
+  }
+
+  /**
+   * Clear course filters
+   */
+  clearCourseFilters() {
+    document.getElementById('courseSearch').value = '';
+    document.getElementById('courseMinDuration').value = '';
+    document.getElementById('courseMaxDuration').value = '';
+    document.getElementById('courseSortBy').value = 'courseName';
+    document.getElementById('courseSortDir').value = 'ASC';
+
+    this.currentPage = 1;
+    this.loadCourses();
   }
 
   /**
@@ -693,19 +1970,99 @@ class ExamManagementApp {
    */
   async loadExams() {
     try {
-      this.showLoading();
+      this.showLoading('Loading exams...');
 
-      // Load exams from API
-      const response = await examsAPI.getAll(this.currentPage, 1);
-      this.renderExamsTable(response.content || []);
-      this.renderPagination('examsPagination', response.totalPages || 1, this.currentPage);
+      if (!window.examsAPI) {
+        throw new Error('Exams API not available');
+      }
 
+      const filters = this.getExamFilters();
+      const response = await retry(() => window.examsAPI.getAll(filters), 3, 1000);
+
+      const normalizedResponse = normalizeApiResponse(response);
+
+      if (!normalizedResponse.success) {
+        throw new Error(normalizedResponse.message || 'Failed to load exams');
+      }
+
+      const exams = safeArrayAccess(normalizedResponse.data?.content, 0, []) || normalizedResponse.data || [];
+      const totalElements = normalizedResponse.data?.totalElements || exams.length;
+
+      // Define columns for DataTable
+      const columns = [
+        { key: 'examId', title: 'ID', sortable: true },
+        { key: 'title', title: 'Title', sortable: true, searchable: true },
+        { key: 'courseName', title: 'Course', sortable: true, searchable: true },
+        { key: 'duration', title: 'Duration', sortable: true },
+        { key: 'numMcq', title: 'MCQ', type: 'number', sortable: true },
+        { key: 'numTf', title: 'T/F', type: 'number', sortable: true },
+        { key: 'examDate', title: 'Date', sortable: true },
+        {
+          key: 'actions',
+          title: 'Actions',
+          sortable: false,
+          searchable: false,
+          render: (value, row) => this.renderExamActions(row)
+        }
+      ];
+
+      // Render enhanced table
+      this.renderEnhancedTable('examsTableContainer', exams, columns);
+
+      this.updateExamStats(exams, totalElements);
       this.hideLoading();
     } catch (error) {
       console.error('Failed to load exams:', error);
-      this.showError('Failed to load exams data');
+      this.handleError(error, 'loading exams');
       this.hideLoading();
     }
+  }
+
+  renderExamActions(exam) {
+    return `
+      <div class="action-buttons">
+        <button class="btn btn-sm btn-primary" onclick="app.editExam('${exam.examId}')" title="Edit">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="app.deleteExam('${exam.examId}')" title="Delete">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Get exam filters from UI
+   * @returns {Object} Filters object
+   */
+  getExamFilters() {
+    return {
+      title: document.getElementById('examSearch')?.value || '',
+      courseId: document.getElementById('examCourseFilter')?.value || '',
+      examDate: document.getElementById('examDateFilter')?.value || '',
+      minDuration: document.getElementById('examMinDuration')?.value || '',
+      maxDuration: document.getElementById('examMaxDuration')?.value || '',
+      page: this.currentPage - 1,
+      size: this.pageSize,
+      sortBy: document.getElementById('examSortBy')?.value || 'title',
+      sortDir: document.getElementById('examSortDir')?.value || 'DESC'
+    };
+  }
+
+  /**
+   * Clear exam filters
+   */
+  clearExamFilters() {
+    document.getElementById('examSearch').value = '';
+    document.getElementById('examCourseFilter').value = '';
+    document.getElementById('examDateFilter').value = '';
+    document.getElementById('examMinDuration').value = '';
+    document.getElementById('examMaxDuration').value = '';
+    document.getElementById('examSortBy').value = 'title';
+    document.getElementById('examSortDir').value = 'DESC';
+
+    this.currentPage = 1;
+    this.loadExams();
   }
 
   /**
@@ -713,19 +2070,95 @@ class ExamManagementApp {
    */
   async loadQuestions() {
     try {
-      this.showLoading();
+      this.showLoading('Loading questions...');
 
-      // Load questions from API
-      const response = await questionsAPI.getAll(this.currentPage, 1);
-      this.renderQuestionsTable(response.content || []);
-      this.renderPagination('questionsPagination', response.totalPages || 1, this.currentPage);
+      if (!window.questionsAPI) {
+        throw new Error('Questions API not available');
+      }
 
+      const filters = this.getQuestionFilters();
+      const response = await retry(() => window.questionsAPI.getAll(filters), 3, 1000);
+
+      const normalizedResponse = normalizeApiResponse(response);
+
+      if (!normalizedResponse.success) {
+        throw new Error(normalizedResponse.message || 'Failed to load questions');
+      }
+
+      const questions = safeArrayAccess(normalizedResponse.data?.content, 0, []) || normalizedResponse.data || [];
+      const totalElements = normalizedResponse.data?.totalElements || questions.length;
+
+      // Define columns for DataTable
+      const columns = [
+        { key: 'questionId', title: 'ID', sortable: true },
+        { key: 'questionText', title: 'Question Text', sortable: true, searchable: true },
+        { key: 'type', title: 'Type', filterable: true },
+        { key: 'courseName', title: 'Course', sortable: true, searchable: true },
+        { key: 'choiceCount', title: 'Choices', type: 'number', sortable: true },
+        {
+          key: 'actions',
+          title: 'Actions',
+          sortable: false,
+          searchable: false,
+          render: (value, row) => this.renderQuestionActions(row)
+        }
+      ];
+
+      // Render enhanced table
+      this.renderEnhancedTable('questionsTableContainer', questions, columns);
+
+      this.updateQuestionStats(questions, totalElements);
       this.hideLoading();
     } catch (error) {
       console.error('Failed to load questions:', error);
-      this.showError('Failed to load questions data');
+      this.handleError(error, 'loading questions');
       this.hideLoading();
     }
+  }
+
+  renderQuestionActions(question) {
+    return `
+      <div class="action-buttons">
+        <button class="btn btn-sm btn-primary" onclick="app.editQuestion('${question.questionId}')" title="Edit">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="app.deleteQuestion('${question.questionId}')" title="Delete">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Get question filters from UI
+   * @returns {Object} Filters object
+   */
+  getQuestionFilters() {
+    return {
+      questionText: document.getElementById('questionSearch')?.value || '',
+      type: document.getElementById('questionTypeFilter')?.value || '',
+      courseId: document.getElementById('questionCourseFilter')?.value || '',
+      hasChoices: document.getElementById('questionHasChoicesFilter')?.value || '',
+      page: this.currentPage - 1,
+      size: this.pageSize,
+      sortBy: document.getElementById('questionSortBy')?.value || 'questionText',
+      sortDir: document.getElementById('questionSortDir')?.value || 'ASC'
+    };
+  }
+
+  /**
+   * Clear question filters
+   */
+  clearQuestionFilters() {
+    document.getElementById('questionSearch').value = '';
+    document.getElementById('questionTypeFilter').value = '';
+    document.getElementById('questionCourseFilter').value = '';
+    document.getElementById('questionHasChoicesFilter').value = '';
+    document.getElementById('questionSortBy').value = 'questionText';
+    document.getElementById('questionSortDir').value = 'ASC';
+
+    this.currentPage = 1;
+    this.loadQuestions();
   }
 
   /**
@@ -733,30 +2166,68 @@ class ExamManagementApp {
    */
   async loadAttempts() {
     try {
-      this.showLoading();
+      this.showLoading('Loading attempts...');
+
+      if (!window.attemptsAPI) {
+        throw new Error('Attempts API not available');
+      }
 
       // Build query parameters according to Swagger spec
       const filters = this.getAttemptFilters();
-      const queryParams = attemptsAPI.buildQueryParams(filters);
+      const queryParams = window.attemptsAPI.buildQueryParams ? window.attemptsAPI.buildQueryParams(filters) : filters;
 
       // Load attempts from API
-      const response = await attemptsAPI.getAll(queryParams);
+      const response = await retry(() => window.attemptsAPI.getAll(queryParams), 3, 1000);
 
-      // Handle paginated response
-      const attempts = response.content || response.data || [];
-      const totalElements = response.totalElements || response.total || 0;
-      const totalPages = response.totalPages || 1;
+      const normalizedResponse = normalizeApiResponse(response);
 
-      this.renderAttemptsTable(attempts);
+      if (!normalizedResponse.success) {
+        throw new Error(normalizedResponse.message || 'Failed to load attempts');
+      }
+
+      const attempts = safeArrayAccess(normalizedResponse.data?.content, 0, []) || normalizedResponse.data || [];
+      const totalElements = normalizedResponse.data?.totalElements || attempts.length;
+      const totalPages = normalizedResponse.data?.totalPages || 1;
+
+      // Define columns for DataTable
+      const columns = [
+        { key: 'attemptId', title: 'Attempt ID', sortable: true },
+        { key: 'studentName', title: 'Student Name', sortable: true, searchable: true },
+        { key: 'studentSsn', title: 'Student SSN', searchable: true },
+        { key: 'examTitle', title: 'Exam Title', sortable: true, searchable: true },
+        { key: 'attemptDate', title: 'Attempt Date', sortable: true },
+        { key: 'grade', title: 'Grade', type: 'number', sortable: true },
+        { key: 'status', title: 'Status', filterable: true },
+        {
+          key: 'actions',
+          title: 'Actions',
+          sortable: false,
+          searchable: false,
+          render: (value, row) => this.renderAttemptActions(row)
+        }
+      ];
+
+      // Render enhanced table
+      this.renderEnhancedTable('attemptsTableContainer', attempts, columns);
+
       this.renderAttemptsPagination(totalPages, this.currentPage, totalElements);
-      this.updateAttemptsStats(attempts);
-
+      this.updateAttemptsStats(attempts, totalElements);
       this.hideLoading();
     } catch (error) {
       console.error('Failed to load attempts:', error);
-      this.showError('Failed to load attempts data');
+      this.handleError(error, 'loading attempts');
       this.hideLoading();
     }
+  }
+
+  renderAttemptActions(attempt) {
+    return `
+      <div class="action-buttons">
+        <button class="btn btn-sm btn-primary" onclick="app.viewAttempt('${attempt.attemptId}')" title="View Details">
+          <i class="fas fa-eye"></i>
+        </button>
+      </div>
+    `;
   }
 
   /**
@@ -771,7 +2242,7 @@ class ExamManagementApp {
       sortBy: document.getElementById('attemptSortBy')?.value || 'attemptDate',
       sortDir: document.getElementById('attemptSortDir')?.value || 'DESC',
       page: this.currentPage - 1, // Swagger uses 0-based indexing
-      size: parseInt(document.getElementById('attemptsPageSize')?.value || '20')
+      size: this.pageSize
     };
   }
 
@@ -794,249 +2265,92 @@ class ExamManagementApp {
    */
   async loadChoices() {
     try {
-      this.showLoading();
+      this.showLoading('Loading choices...');
 
-      // Load choices from API
-      const response = await choiceAPI.getAll(this.currentPage, 1);
-      this.renderChoicesTable(response.content || []);
-      this.renderPagination('choicesPagination', response.totalPages || 1, this.currentPage);
+      if (!window.choicesAPI) {
+        throw new Error('Choices API not available');
+      }
 
+      const filters = this.getChoiceFilters();
+      const response = await retry(() => window.choicesAPI.getAll(filters), 3, 1000);
+
+      const normalizedResponse = normalizeApiResponse(response);
+
+      if (!normalizedResponse.success) {
+        throw new Error(normalizedResponse.message || 'Failed to load choices');
+      }
+
+      const choices = safeArrayAccess(normalizedResponse.data?.content, 0, []) || normalizedResponse.data || [];
+      const totalElements = normalizedResponse.data?.totalElements || choices.length;
+
+      // Define columns for DataTable
+      const columns = [
+        { key: 'choiceId', title: 'ID', sortable: true },
+        { key: 'questionId', title: 'Question ID', sortable: true },
+        { key: 'choiceText', title: 'Choice Text', sortable: true, searchable: true },
+        { key: 'isCorrect', title: 'Correct', filterable: true },
+        {
+          key: 'actions',
+          title: 'Actions',
+          sortable: false,
+          searchable: false,
+          render: (value, row) => this.renderChoiceActions(row)
+        }
+      ];
+
+      // Render enhanced table
+      this.renderEnhancedTable('choicesTableContainer', choices, columns);
+
+      this.updateChoiceStats(choices, totalElements);
       this.hideLoading();
     } catch (error) {
       console.error('Failed to load choices:', error);
-      this.showError('Failed to load choices data');
+      this.handleError(error, 'loading choices');
       this.hideLoading();
     }
   }
 
-  /**
-   * Render students table
-   * @param {Array} students - Students data
-   */
-  renderStudentsTable(students) {
-    const tbody = document.getElementById('studentsTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = students.map(student => `
-      <tr>
-        <td>${student.ssn || 'N/A'}</td>
-        <td>${student.name || 'N/A'}</td>
-        <td>${student.email || 'N/A'}</td>
-        <td>${student.age || 'N/A'}</td>
-        <td>${student.gender || 'N/A'}</td>
-        <td>${student.city || 'N/A'}</td>
-        <td>${student.graduationYear || 'N/A'}</td>
-        <td>
-          <button class="btn btn-sm btn-primary" onclick="app.editStudent('${student.ssn}')">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="app.deleteStudent('${student.ssn}')">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  /**
-   * Render courses table
-   * @param {Array} courses - Courses data
-   */
-  renderCoursesTable(courses) {
-    const tbody = document.getElementById('coursesTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = courses.map(course => `
-      <tr>
-        <td>${course.courseId || 'N/A'}</td>
-        <td>${course.courseName || 'N/A'}</td>
-        <td>${course.duration || 'N/A'}</td>
-        <td>${course.hasExams ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
-        <td>${course.hasQuestions ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
-        <td>
-          <button class="btn btn-sm btn-primary" onclick="app.editCourse(${course.id})">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="app.deleteCourse(${course.id})">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  /**
-   * Render exams table
-   * @param {Array} exams - Exams data
-   */
-  renderExamsTable(exams) {
-    const tbody = document.getElementById('examsTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = exams.map(exam => `
-      <tr>
-        <td>${exam.examId || 'N/A'}</td>
-        <td>${exam.title || 'N/A'}</td>
-        <td>${exam.courseName || 'N/A'}</td>
-        <td>${exam.duration || 'N/A'}</td>
-        <td>${exam.numMcq || 0}</td>
-        <td>${exam.numTf || 0}</td>
-        <td>${exam.examDate || 'N/A'}</td>
-        <td>${exam.choices && exam.choices.length || 0}</td>
-        <td>
-          <button class="btn btn-sm btn-primary" onclick="app.editExam(${exam.examId})">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="app.deleteExam(${exam.examId})">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  /**
-   * Render questions table
-   * @param {Array} questions - Questions data
-   */
-  renderQuestionsTable(questions) {
-    const tbody = document.getElementById('questionsTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = questions.map(question => `
-      <tr>
-        <td>${question.questionId || 'N/A'}</td>
-        <td>${question.questionText || 'N/A'}</td>
-        <td>${question.type || 'N/A'}</td>
-        <td>${question.courseName || 'N/A'}</td>
-        <td>${question.choices && question.choices.length || 0}</td>
-        <td>
-          <button class="btn btn-sm btn-primary" onclick="app.editQuestion(${question.questionId})">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="app.deleteQuestion(${question.questionId})">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  /**
-   * Render attempts table with formatted data
-   * @param {Array} attempts - Attempts data
-   */
-  renderAttemptsTable(attempts) {
-    const tbody = document.getElementById('attemptsTableBody');
-    if (!tbody) return;
-
-    if (attempts.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="8" class="no-data">
-            <i class="fas fa-inbox"></i>
-            <p>No attempts found</p>
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    tbody.innerHTML = attempts.map(attempt => {
-      const formattedAttempt = attemptsAPI.formatAttemptData(attempt);
-
-      return `
-        <tr>
-          <td>${formattedAttempt.attemptId || 'N/A'}</td>
-          <td>${formattedAttempt.studentName || 'N/A'}</td>
-          <td>${formattedAttempt.studentSsn || 'N/A'}</td>
-          <td>${formattedAttempt.examTitle || 'N/A'}</td>
-          <td>${formattedAttempt.formattedAttemptDate}</td>
-          <td style="color: ${formattedAttempt.gradeColor}">
-            ${formattedAttempt.grade !== null ? formattedAttempt.grade + '%' : 'N/A'}
-          </td>
-          <td>${formattedAttempt.statusBadge}</td>
-          <td>
-            <button class="btn btn-sm btn-primary" onclick="app.viewAttempt(${formattedAttempt.attemptId})" title="View Details">
-              <i class="fas fa-eye"></i>
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  /**
-   * Render choices table
-   * @param {Array} choices - Choices data
-   */
-  renderChoicesTable(choices) {
-    const tbody = document.getElementById('choicesTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = choices.map(choice => `
-      <tr>
-        <td>${choice.choiceId || 'N/A'}</td>
-        <td>${choice.questionId || 'N/A'}</td>
-        <td>${choice.questionText || 'N/A'}</td>
-        <td>${choice.isCorrect ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
-        <td>
-          <button class="btn btn-sm btn-primary" onclick="app.editChoice(${choice.id})">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="app.deleteChoice(${choice.id})">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  /**
-   * Render pagination
-   * @param {string} containerId - Pagination container ID
-   * @param {number} totalPages - Total pages
-   * @param {number} currentPage - Current page
-   */
-  renderPagination(containerId, totalPages, currentPage) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    let paginationHTML = '';
-
-    // Previous button
-    paginationHTML += `
-      <button class="btn btn-sm ${currentPage === 1 ? 'btn-secondary disabled' : 'btn-primary'}" 
-              onclick="app.changePage(${currentPage - 1})" 
-              ${currentPage === 1 ? 'disabled' : ''}>
-        Previous
-      </button>
+  renderChoiceActions(choice) {
+    return `
+      <div class="action-buttons">
+        <button class="btn btn-sm btn-primary" onclick="app.editChoice('${choice.choiceId}')" title="Edit">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="app.deleteChoice('${choice.choiceId}')" title="Delete">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
     `;
+  }
 
-    // Page numbers
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-        paginationHTML += `
-          <button class="btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-secondary'}" 
-                  onclick="app.changePage(${i})">
-            ${i}
-          </button>
-        `;
-      } else if (i === currentPage - 2 || i === currentPage + 2) {
-        paginationHTML += '<span class="pagination-dots">...</span>';
-      }
-    }
+  /**
+   * Get choice filters from UI
+   * @returns {Object} Filters object
+   */
+  getChoiceFilters() {
+    return {
+      questionId: document.getElementById('choiceQuestionSearch')?.value || '',
+      choiceText: document.getElementById('choiceTextSearch')?.value || '',
+      isCorrect: document.getElementById('choiceCorrectFilter')?.value || '',
+      page: this.currentPage - 1,
+      size: this.pageSize,
+      sortBy: document.getElementById('choiceSortBy')?.value || 'choiceId',
+      sortDir: document.getElementById('choiceSortDir')?.value || 'ASC'
+    };
+  }
 
-    // Next button
-    paginationHTML += `
-      <button class="btn btn-sm ${currentPage === totalPages ? 'btn-secondary disabled' : 'btn-primary'}" 
-              onclick="app.changePage(${currentPage + 1})" 
-              ${currentPage === totalPages ? 'disabled' : ''}>
-        Next
-      </button>
-    `;
+  /**
+   * Clear choice filters
+   */
+  clearChoiceFilters() {
+    document.getElementById('choiceQuestionSearch').value = '';
+    document.getElementById('choiceTextSearch').value = '';
+    document.getElementById('choiceCorrectFilter').value = '';
+    document.getElementById('choiceSortBy').value = 'choiceId';
+    document.getElementById('choiceSortDir').value = 'ASC';
 
-    container.innerHTML = paginationHTML;
+    this.currentPage = 1;
+    this.loadChoices();
   }
 
   /**
@@ -1047,18 +2361,6 @@ class ExamManagementApp {
    */
   renderAttemptsPagination(totalPages, currentPage, totalElements) {
     const container = document.getElementById('attemptsPagination');
-    const startElement = (currentPage - 1) * this.getAttemptFilters().size + 1;
-    const endElement = Math.min(currentPage * this.getAttemptFilters().size, totalElements);
-
-    // Update pagination info
-    const startElementEl = document.getElementById('attemptsStart');
-    const endElementEl = document.getElementById('attemptsEnd');
-    const totalElementsEl = document.getElementById('attemptsTotal');
-
-    if (startElementEl) startElementEl.textContent = startElement.toString();
-    if (endElementEl) endElementEl.textContent = endElement.toString();
-    if (totalElementsEl) totalElementsEl.textContent = totalElements.toString();
-
     if (!container) return;
 
     let paginationHTML = '';
@@ -1100,20 +2402,151 @@ class ExamManagementApp {
   }
 
   /**
+   * Update student statistics
+   * @param {Array} students - Students data
+   * @param {number} total - Total count
+   */
+  updateStudentStats(students, total) {
+    const totalCountEl = document.getElementById('studentsTotalCount');
+    const averageAgeEl = document.getElementById('studentsAverageAge');
+    const activeCountEl = document.getElementById('studentsActiveCount');
+
+    if (totalCountEl) totalCountEl.textContent = total.toString();
+
+    if (averageAgeEl && students.length > 0) {
+      const avgAge = (students.reduce((sum, student) => sum + (student.age || 0), 0) / students.length).toFixed(1);
+      averageAgeEl.textContent = `${avgAge} years`;
+    }
+
+    if (activeCountEl) {
+      // For now, assume all students with graduation year in future are active
+      const currentYear = new Date().getFullYear();
+      const activeCount = students.filter(s => s.graduationYear > currentYear).length;
+      activeCountEl.textContent = activeCount.toString();
+    }
+  }
+
+  /**
+   * Update course statistics
+   * @param {Array} courses - Courses data
+   * @param {number} total - Total count
+   */
+  updateCourseStats(courses, total) {
+    const totalCountEl = document.getElementById('coursesTotalCount');
+    const averageDurationEl = document.getElementById('coursesAverageDuration');
+    const withExamsCountEl = document.getElementById('coursesWithExamsCount');
+
+    if (totalCountEl) totalCountEl.textContent = total.toString();
+
+    if (averageDurationEl && courses.length > 0) {
+      const avgDuration = (courses.reduce((sum, course) => sum + (course.duration || 0), 0) / courses.length).toFixed(1);
+      averageDurationEl.textContent = `${avgDuration} hours`;
+    }
+
+    if (withExamsCountEl) {
+      const withExamsCount = courses.filter(c => c.examCount > 0).length;
+      withExamsCountEl.textContent = withExamsCount.toString();
+    }
+  }
+
+  /**
+   * Update exam statistics
+   * @param {Array} exams - Exams data
+   * @param {number} total - Total count
+   */
+  updateExamStats(exams, total) {
+    const totalCountEl = document.getElementById('examsTotalCount');
+    const averageDurationEl = document.getElementById('examsAverageDuration');
+    const activeCountEl = document.getElementById('examsActiveCount');
+
+    if (totalCountEl) totalCountEl.textContent = total.toString();
+
+    if (averageDurationEl && exams.length > 0) {
+      const avgDuration = (exams.reduce((sum, exam) => sum + (exam.duration || 0), 0) / exams.length).toFixed(1);
+      averageDurationEl.textContent = `${avgDuration} min`;
+    }
+
+    if (activeCountEl) {
+      // For now, assume exams with future dates are active
+      const today = new Date().toISOString().split('T')[0];
+      const activeCount = exams.filter(e => e.examDate >= today).length;
+      activeCountEl.textContent = activeCount.toString();
+    }
+  }
+
+  /**
+   * Update question statistics
+   * @param {Array} questions - Questions data
+   * @param {number} total - Total count
+   */
+  updateQuestionStats(questions, total) {
+    const totalCountEl = document.getElementById('questionsTotalCount');
+    const mcqCountEl = document.getElementById('questionsMcqCount');
+    const tfCountEl = document.getElementById('questionsTfCount');
+
+    if (totalCountEl) totalCountEl.textContent = total.toString();
+
+    if (mcqCountEl) {
+      const mcqCount = questions.filter(q => q.type === 'MCQ').length;
+      mcqCountEl.textContent = mcqCount.toString();
+    }
+
+    if (tfCountEl) {
+      const tfCount = questions.filter(q => q.type === 'T/F').length;
+      tfCountEl.textContent = tfCount.toString();
+    }
+  }
+
+  /**
    * Update attempts statistics
    * @param {Array} attempts - Attempts data
+   * @param {number} total - Total count
    */
-  updateAttemptsStats(attempts) {
-    const totalCount = attempts.length;
-    const averageGrade = attempts.length > 0
-        ? (attempts.reduce((sum, attempt) => sum + (attempt.grade || 0), 0) / attempts.length).toFixed(1)
-        : null;
-
+  updateAttemptsStats(attempts, total) {
     const totalCountEl = document.getElementById('totalAttemptsCount');
     const averageGradeEl = document.getElementById('averageGrade');
+    const passRateEl = document.getElementById('passRate');
 
-    if (totalCountEl) totalCountEl.textContent = totalCount.toString();
-    if (averageGradeEl) averageGradeEl.textContent = averageGrade ? `${averageGrade}%` : 'N/A';
+    if (totalCountEl) totalCountEl.textContent = total.toString();
+
+    if (averageGradeEl && attempts.length > 0) {
+      const validGrades = attempts.filter(a => a.grade != null).map(a => a.grade);
+      if (validGrades.length > 0) {
+        const avgGrade = (validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length).toFixed(1);
+        averageGradeEl.textContent = `${avgGrade}%`;
+      } else {
+        averageGradeEl.textContent = 'N/A';
+      }
+    }
+
+    if (passRateEl && attempts.length > 0) {
+      const passedCount = attempts.filter(a => a.grade >= 60).length;
+      const passRate = ((passedCount / attempts.length) * 100).toFixed(1);
+      passRateEl.textContent = `${passRate}%`;
+    }
+  }
+
+  /**
+   * Update choice statistics
+   * @param {Array} choices - Choices data
+   * @param {number} total - Total count
+   */
+  updateChoiceStats(choices, total) {
+    const totalCountEl = document.getElementById('choicesTotalCount');
+    const correctCountEl = document.getElementById('choicesCorrectCount');
+    const incorrectCountEl = document.getElementById('choicesIncorrectCount');
+
+    if (totalCountEl) totalCountEl.textContent = total.toString();
+
+    if (correctCountEl) {
+      const correctCount = choices.filter(c => c.isCorrect).length;
+      correctCountEl.textContent = correctCount.toString();
+    }
+
+    if (incorrectCountEl) {
+      const incorrectCount = choices.filter(c => !c.isCorrect).length;
+      incorrectCountEl.textContent = incorrectCount.toString();
+    }
   }
 
   /**
@@ -1159,151 +2592,84 @@ class ExamManagementApp {
     await this.loadSectionData(this.currentSection);
   }
 
-  /**
-   * Edit student
-   * @param {string} ssn - Student SSN
-   */
-  async editStudent(ssn) {
-    try {
-      this.showLoading();
-      const student = await studentsAPI.getById(ssn);
-      this.showForm('Edit Student', student);
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to load student:', error);
-      this.showError('Failed to load student data');
-      this.hideLoading();
-    }
-  }
-
-  /**
-   * Delete student
-   * @param {string} ssn - Student SSN
-   */
-  async deleteStudent(ssn) {
-    if (!confirm('Are you sure you want to delete this student?')) return;
-
-    try {
-      this.showLoading();
-      await studentsAPI.delete(ssn);
-      this.toastManager.show('Student deleted successfully!', 'success');
-      await this.loadStudents();
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to delete student:', error);
-      this.showError('Failed to delete student');
-      this.hideLoading();
-    }
-  }
-
-  /**
-   * Edit course
-   * @param {number} id - Course ID
-   */
-  async editCourse(id) {
-    try {
-      this.showLoading();
-      const course = await coursesAPI.getById(id);
-      this.showForm('Edit Course', course);
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to load course:', error);
-      this.showError('Failed to load course data');
-      this.hideLoading();
-    }
-  }
 
   /**
    * Delete course
    * @param {number} id - Course ID
    */
   async deleteCourse(id) {
-    if (!confirm('Are you sure you want to delete this course?')) return;
+    const confirmed = await showConfirm(
+        'Delete Course',
+        'Are you sure you want to delete this course? This action cannot be undone.',
+        'Delete',
+        'Cancel'
+    );
 
-    try {
-      this.showLoading();
-      await coursesAPI.delete(id);
-      this.toastManager.show('Course deleted successfully!', 'success');
-      await this.loadCourses();
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to delete course:', error);
-      this.showError('Failed to delete course');
-      this.hideLoading();
+    if (confirmed) {
+      try {
+        this.showLoading('Deleting course...');
+        await window.coursesAPI.delete(id);
+        this.showToast('Course deleted successfully', 'success');
+        await this.loadCourses();
+      } catch (error) {
+        this.handleError(error, 'deleting course');
+      } finally {
+        this.hideLoading();
+      }
     }
   }
 
-  /**
-   * Edit exam
-   * @param {number} id - Exam ID
-   */
-  async editExam(id) {
-    try {
-      this.showLoading();
-      const exam = await examsAPI.getById(id);
-      this.showForm('Edit Exam', exam);
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to load exam:', error);
-      this.showError('Failed to load exam data');
-      this.hideLoading();
-    }
-  }
 
   /**
    * Delete exam
    * @param {number} id - Exam ID
    */
   async deleteExam(id) {
-    if (!confirm('Are you sure you want to delete this exam?')) return;
+    const confirmed = await showConfirm(
+        'Delete Exam',
+        'Are you sure you want to delete this exam? This action cannot be undone.',
+        'Delete',
+        'Cancel'
+    );
 
-    try {
-      this.showLoading();
-      await examsAPI.delete(id);
-      this.toastManager.show('Exam deleted successfully!', 'success');
-      await this.loadExams();
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to delete exam:', error);
-      this.showError('Failed to delete exam');
-      this.hideLoading();
+    if (confirmed) {
+      try {
+        this.showLoading('Deleting exam...');
+        await window.examsAPI.delete(id);
+        this.showToast('Exam deleted successfully', 'success');
+        await this.loadExams();
+      } catch (error) {
+        this.handleError(error, 'deleting exam');
+      } finally {
+        this.hideLoading();
+      }
     }
   }
 
-  /**
-   * Edit question
-   * @param {number} id - Question ID
-   */
-  async editQuestion(id) {
-    try {
-      this.showLoading();
-      const question = await questionsAPI.getById(id);
-      this.showForm('Edit Question', question);
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to load question:', error);
-      this.showError('Failed to load question data');
-      this.hideLoading();
-    }
-  }
 
   /**
    * Delete question
    * @param {number} id - Question ID
    */
   async deleteQuestion(id) {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+    const confirmed = await showConfirm(
+        'Delete Question',
+        'Are you sure you want to delete this question? This action cannot be undone.',
+        'Delete',
+        'Cancel'
+    );
 
-    try {
-      this.showLoading();
-      await questionsAPI.delete(id);
-      this.toastManager.show('Question deleted successfully!', 'success');
-      await this.loadQuestions();
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to delete question:', error);
-      this.showError('Failed to delete question');
-      this.hideLoading();
+    if (confirmed) {
+      try {
+        this.showLoading('Deleting question...');
+        await window.questionsAPI.delete(id);
+        this.showToast('Question deleted successfully', 'success');
+        await this.loadQuestions();
+      } catch (error) {
+        this.handleError(error, 'deleting question');
+      } finally {
+        this.hideLoading();
+      }
     }
   }
 
@@ -1313,13 +2679,12 @@ class ExamManagementApp {
    */
   async viewAttempt(id) {
     try {
-      this.showLoading();
-      const attempt = await attemptsAPI.getById(id);
+      this.showLoading('Loading attempt details...');
+      const attempt = await window.attemptsAPI.getById(id);
       this.showAttemptDetails(attempt);
-      this.hideLoading();
     } catch (error) {
-      console.error('Failed to load attempt:', error);
-      this.showError('Failed to load attempt data');
+      this.handleError(error, 'loading attempt');
+    } finally {
       this.hideLoading();
     }
   }
@@ -1329,7 +2694,7 @@ class ExamManagementApp {
    * @param {Object} attempt - Attempt data
    */
   showAttemptDetails(attempt) {
-    const formattedAttempt = attemptsAPI.formatAttemptData(attempt);
+    const formattedAttempt = window.attemptsAPI?.formatAttemptData?.(attempt) || attempt;
 
     const content = `
       <div class="attempt-details">
@@ -1350,19 +2715,19 @@ class ExamManagementApp {
           </div>
           <div class="detail-item">
             <label>Attempt Date:</label>
-            <span>${formattedAttempt.formattedAttemptDate}</span>
+            <span>${formattedAttempt.formattedAttemptDate || formattedAttempt.attemptDate || 'N/A'}</span>
           </div>
         </div>
         <div class="detail-row">
           <div class="detail-item">
             <label>Grade:</label>
-            <span style="color: ${formattedAttempt.gradeColor}; font-weight: bold;">
-              ${formattedAttempt.grade !== null ? formattedAttempt.grade + '%' : 'N/A'}
+            <span style="color: ${formattedAttempt.gradeColor || 'inherit'}; font-weight: bold;">
+              ${formattedAttempt.grade !== null && formattedAttempt.grade !== undefined ? formattedAttempt.grade + '%' : 'N/A'}
             </span>
           </div>
           <div class="detail-item">
             <label>Status:</label>
-            <span>${formattedAttempt.statusBadge}</span>
+            <span>${formattedAttempt.statusBadge || (formattedAttempt.grade >= 60 ? 'PASSED' : 'FAILED')}</span>
           </div>
         </div>
       </div>
@@ -1376,169 +2741,81 @@ class ExamManagementApp {
   }
 
   /**
-   * Edit choice
-   * @param {number} id - Choice ID
-   */
-  async editChoice(id) {
-    try {
-      this.showLoading();
-      const choice = await choiceAPI.getById(id);
-      this.showForm('Edit Choice', choice);
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to load choice:', error);
-      this.showError('Failed to load choice data');
-      this.hideLoading();
-    }
-  }
-
-  /**
    * Delete choice
    * @param {number} id - Choice ID
    */
   async deleteChoice(id) {
-    if (!confirm('Are you sure you want to delete this choice?')) return;
+    const confirmed = await showConfirm(
+        'Delete Choice',
+        'Are you sure you want to delete this choice? This action cannot be undone.',
+        'Delete',
+        'Cancel'
+    );
 
-    try {
-      this.showLoading();
-      await choiceAPI.delete(id);
-      this.toastManager.show('Choice deleted successfully!', 'success');
-      await this.loadChoices();
-      this.hideLoading();
-    } catch (error) {
-      console.error('Failed to delete choice:', error);
-      this.showError('Failed to delete choice');
-      this.hideLoading();
+    if (confirmed) {
+      try {
+        this.showLoading('Deleting choice...');
+        await window.choicesAPI.delete(id);
+        this.showToast('Choice deleted successfully', 'success');
+        await this.loadChoices();
+      } catch (error) {
+        this.handleError(error, 'deleting choice');
+      } finally {
+        this.hideLoading();
+      }
     }
   }
 
   /**
-   * Show form modal
-   * @param {string} title - Form title
-   * @param {Object} data - Form data
-   * @param {boolean} readOnly - Whether form is read-only
+   * Handle add button clicks
+   * @param {string} buttonId - Button ID
    */
-  showForm(title, data = null, readOnly = false) {
-    const formConfig = {
-      title: title,
-      fields: this.getFormFields(title, data, readOnly),
-      onSubmit: readOnly ? null : (formData) => this.handleFormSubmit(formData)
-    };
-
-    this.modalManager.show(formConfig);
-  }
-
-  /**
-   * Get form fields based on title and data
-   * @param {string} title - Form title
-   * @param {Object} data - Form data
-   * @param {boolean} readOnly - Whether form is read-only
-   * @returns {Array} Form fields
-   */
-  getFormFields(title, data, readOnly) {
-    // This is a simplified version - you can expand based on your needs
-    const fields = [];
-
-    if (title.includes('Student')) {
-      fields.push(
-          { name: 'ssn', label: 'SSN', type: 'text', required: true, value: data?.ssn || '', disabled: readOnly || !!data?.ssn },
-          { name: 'name', label: 'Name', type: 'text', required: true, value: data?.name || '', disabled: readOnly },
-          { name: 'email', label: 'Email', type: 'email', required: true, value: data?.email || '', disabled: readOnly },
-          { name: 'age', label: 'Age', type: 'number', value: data?.age || '', disabled: readOnly },
-          { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female'], value: data?.gender || '', disabled: readOnly },
-          { name: 'city', label: 'City', type: 'text', value: data?.city || '', disabled: readOnly },
-          { name: 'graduationYear', label: 'Graduation Year', type: 'number', value: data?.graduationYear || '', disabled: readOnly }
-      );
-    } else if (title.includes('Course')) {
-      fields.push(
-          { name: 'name', label: 'Course Name', type: 'text', required: true, value: data?.name || '', disabled: readOnly },
-          { name: 'duration', label: 'Duration (hours)', type: 'number', value: data?.duration || '', disabled: readOnly }
-      );
-    } else if (title.includes('Exam')) {
-      fields.push(
-          { name: 'title', label: 'Exam Title', type: 'text', required: true, value: data?.title || '', disabled: readOnly },
-          { name: 'courseId', label: 'Course', type: 'select', required: true, value: data?.courseId || '', disabled: readOnly },
-          { name: 'duration', label: 'Duration (minutes)', type: 'number', required: true, value: data?.duration || '', disabled: readOnly },
-          { name: 'examDate', label: 'Exam Date', type: 'date', required: true, value: data?.examDate || '', disabled: readOnly }
-      );
+  handleAddButton(buttonId) {
+    switch (buttonId) {
+      case 'addStudentBtn':
+        this.showStudentForm();
+        break;
+      case 'addCourseBtn':
+        this.showCourseForm();
+        break;
+      case 'addExamBtn':
+        this.showExamForm();
+        break;
+      case 'addQuestionBtn':
+        this.showQuestionForm();
+        break;
+      case 'addChoiceBtn':
+        this.showChoiceForm();
+        break;
+      default:
+        console.warn('Unknown add button:', buttonId);
     }
-
-    return fields;
   }
-
   /**
    * Handle form submission
    */
   async handleFormSubmit() {
-    const form = document.querySelector('#formModal form');
-    if (form && form.checkValidity()) {
-      try {
-        this.loadingManager.show('Saving...');
-
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        this.modalManager.hide();
-        this.toastManager.show('Item saved successfully!', 'success');
-
-        // Refresh current section data
-        await this.loadSectionData(this.currentSection);
-
-      } catch (error) {
-        console.error('Form submission failed:', error);
-        this.showError('Failed to save item');
-      } finally {
-        this.loadingManager.hide();
-      }
-    } else if (form) {
-      form.reportValidity();
-    }
+    // This would handle actual form submission
+    // For now, just show a success message
+    this.showToast('Form submitted successfully!', 'success');
+    this.modalManager.hide();
   }
 
   /**
-   * Show loading state
+   * Perform global search
+   * @param {string} query - Search query
    */
-  showLoading() {
-    this.loadingManager.show();
+  performGlobalSearch(query) {
+    console.log('Performing global search for:', query);
+    // Implement global search across all sections
+    this.showToast(`Searching for: ${query}`, 'info');
   }
 
   /**
-   * Hide loading state
+   * Refresh current section
    */
-  hideLoading() {
-    this.loadingManager.hide();
-  }
-
-  /**
-   * Show toast notification
-   * @param {string} message - Toast message
-   * @param {string} type - Toast type (success, error, warning, info)
-   */
-  showToast(message, type = 'info') {
-    this.toastManager.show(message, type);
-  }
-
-  /**
-   * Show error message
-   * @param {string} message - Error message
-   */
-  showError(message) {
-    this.showToast(message, 'error');
-  }
-
-  /**
-   * Toggle sidebar
-   * @param {boolean} force - Force state (optional)
-   */
-  toggleSidebar(force) {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-      if (typeof force === 'boolean') {
-        sidebar.classList.toggle('active', force);
-      } else {
-        sidebar.classList.toggle('active');
-      }
-    }
+  async refreshCurrentSection() {
+    await this.loadSectionData(this.currentSection);
   }
 
   /**
@@ -1559,31 +2836,12 @@ class ExamManagementApp {
   }
 
   /**
-   * Get random number between min and max
-   * @param {number} min - Minimum value
-   * @param {number} max - Maximum value
-   * @returns {number} Random number
+   * Capitalize first letter
+   * @param {string} string - String to capitalize
+   * @returns {string} Capitalized string
    */
-  getRandomNumber(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  /**
-   * Debounce function
-   * @param {Function} func - Function to debounce
-   * @param {number} wait - Wait time in milliseconds
-   * @returns {Function} Debounced function
-   */
-  debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
+  capitalizeFirst(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
   }
 
   /**
@@ -1604,6 +2862,27 @@ class ExamManagementApp {
     if (e.key === 'Escape') {
       this.modalManager.hide();
     }
+
+    // Ctrl/Cmd + / for help
+    if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+      e.preventDefault();
+      this.showHelp();
+    }
+  }
+
+  /**
+   * Show help dialog
+   */
+  showHelp() {
+    showAlert(
+        `<h3>Keyboard Shortcuts</h3>
+        <ul>
+          <li><kbd>Ctrl/Cmd + K</kbd> - Focus search</li>
+          <li><kbd>Escape</kbd> - Close modal</li>
+          <li><kbd>Ctrl/Cmd + /</kbd> - Show this help</li>
+        </ul>`,
+        { title: 'Help & Shortcuts' }
+    );
   }
 
   /**
@@ -1626,21 +2905,186 @@ class ExamManagementApp {
     try {
       const healthStatus = document.getElementById('apiStatus');
       if (healthStatus) {
-        healthStatus.classList.remove('status-healthy', 'status-unhealthy', 'status-unknown');
-        healthStatus.classList.add('status-healthy');
+        // Check if all APIs are available
+        const apis = ['studentsAPI', 'coursesAPI', 'examsAPI', 'questionsAPI', 'choicesAPI', 'attemptsAPI'];
+        const allApisAvailable = apis.every(api => window[api] !== undefined);
+
+        const statusDot = healthStatus.querySelector('.status-dot');
+        if (statusDot) {
+          statusDot.className = `status-dot ${allApisAvailable ? 'online' : 'error'}`;
+        }
       }
     } catch (error) {
       console.error('API health check failed:', error);
-      const healthStatus = document.getElementById('apiStatus');
-      if (healthStatus) {
-        healthStatus.classList.remove('status-healthy', 'status-unhealthy', 'status-unknown');
-        healthStatus.classList.add('status-unknown');
+    }
+  }
+
+  /**
+   * Enhanced error handling with utility integration
+   */
+  handleError(error, context) {
+    console.error(`App error in ${context}:`, error);
+
+    const errorMessage = error.message || error.response?.data?.message || 'An unexpected error occurred';
+    const safeMessage = sanitizeHtml(errorMessage);
+
+    this.showToast(`Error: ${safeMessage}`, 'error');
+
+    // Log to console with context
+    console.group(`Error Context: ${context}`);
+    console.error('Error:', error);
+    console.error('Context:', context);
+    console.groupEnd();
+
+    // Dispatch error event for external handling
+    const event = new CustomEvent('appError', {
+      detail: {
+        error: error,
+        context: context,
+        timestamp: new Date().toISOString(),
+        app: this
+      }
+    });
+    document.dispatchEvent(event);
+  }
+
+  /**
+   * Enhanced global error handling
+   */
+  setupGlobalErrorHandling() {
+    window.addEventListener('error', (event) => {
+      this.handleError(event.error, 'global');
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      this.handleError(event.reason, 'unhandledPromise');
+    });
+  }
+
+  /**
+   * Enhanced utility method aliases for convenience
+   */
+  showLoading(message = 'Loading...', containerId = null) {
+    this.loadingManager.show(message, containerId);
+  }
+
+  hideLoading(containerId = null) {
+    this.loadingManager.hide(containerId);
+  }
+
+  showToast(message, type = 'info', duration = 3000) {
+    this.toastManager.show(message, type, duration);
+  }
+
+  showError(message) {
+    this.showToast(message, 'error');
+  }
+
+  toggleDarkMode() {
+    toggleDarkMode();
+  }
+
+  toggleSidebar(force) {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+      if (typeof force === 'boolean') {
+        sidebar.classList.toggle('collapsed', force);
+      } else {
+        sidebar.classList.toggle('collapsed');
       }
     }
   }
+
+  /**
+   * Enhanced cleanup with utility integration
+   */
+  destroy() {
+    // Cleanup dashboard resources
+    if (this.dashboardComponent) {
+      this.dashboardComponent.destroy();
+      this.dashboardComponent = null;
+    }
+
+    // Cleanup table instances
+    this.tableInstances.forEach((table, tableId) => {
+      try {
+        table.destroy();
+      } catch (error) {
+        console.error(`Error destroying table ${tableId}:`, error);
+      }
+    });
+    this.tableInstances.clear();
+
+    // Cleanup form instances
+    this.formInstances.forEach((form, formId) => {
+      try {
+        form.destroy();
+      } catch (error) {
+        console.error(`Error destroying form ${formId}:`, error);
+      }
+    });
+    this.formInstances.clear();
+
+    // Stop auto refresh
+    this.stopAutoRefresh();
+
+    // Hide any active loading states
+    this.hideLoading();
+
+    // Hide any active toasts
+    this.toastManager.hide();
+
+    // Clear any active banners
+    hideBanner();
+
+    // Clear intervals
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+
+    console.log('Application cleanup completed');
+  }
 }
 
-// Initialize the application when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  window.app = new ExamManagementApp();
+// Enhanced initialization with error handling
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    // Check if required APIs are available
+    const requiredAPIs = ['studentsAPI', 'coursesAPI', 'examsAPI', 'questionsAPI', 'choicesAPI', 'attemptsAPI'];
+    const missingAPIs = requiredAPIs.filter(api => !window[api]);
+
+    if (missingAPIs.length > 0) {
+      console.warn('Missing required APIs:', missingAPIs);
+      showToast('Some features may not work properly - missing APIs', 'warning');
+    }
+
+    // Initialize the application
+    window.app = new ExamManagementApp();
+
+    // Make utility functions globally available for debugging
+    window.appUtils = {
+      showToast,
+      showLoading,
+      hideLoading,
+      showConfirm,
+      showAlert,
+      debounce,
+      throttle,
+      deepClone,
+      normalizeApiResponse,
+      retry
+    };
+
+  } catch (error) {
+    console.error('Failed to initialize application:', error);
+    await showAlert(
+        'Application Initialization Failed',
+        'The application failed to start properly. Please refresh the page or contact support if the problem persists.'
+    );
+  }
 });
+
+// Export for module usage if needed
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ExamManagementApp;
+}

@@ -1,7 +1,7 @@
 // Questions API Client
-import './types.js'
-import { API_CONFIG } from './config.js';
-import { api, handleAPIResponse, handleAPIError } from './config.js';
+import '/types.js'
+import { API_CONFIG } from '/config.js';
+import { api, handleAPIResponse, handleAPIError } from '/config.js';
 class QuestionsAPI {
   constructor() {
     this.endpoint = API_CONFIG.ENDPOINTS.QUESTIONS;
